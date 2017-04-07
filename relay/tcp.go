@@ -31,11 +31,11 @@ func NewTCPListener(opts ...tcpOption) *tcpListener {
 	return listener
 }
 
-func ListenerOption(listener *net.TCPListener) tcpOption {
+func TCPListenerOption(listener *net.TCPListener) tcpOption {
 	return func(t *tcpListener) tcpOption {
 		prev := t.listener
 		t.listener = listener
-		return ListenerOption(prev)
+		return TCPListenerOption(prev)
 	}
 }
 
@@ -135,8 +135,6 @@ func (t *tcpListener) Start() error {
 					break
 				}
 				// Handle connection
-
-				log.Errorf("!!!!!!!!!!!!!!!!!!!!!")
 				go t.handleConn(conn)
 			}
 		}

@@ -14,11 +14,12 @@ import (
 )
 
 var (
-	ErrAlreadyStaretd = errors.New("server already started")
+	ErrAlreadyStarted = errors.New("server already started")
 )
 
 type graphite struct {
 	udp       relay.Receiver
+	tcp       relay.Receiver
 	metrics   chan *plugin.Metric
 	done      chan struct{}
 	isStarted bool
@@ -27,6 +28,7 @@ type graphite struct {
 func NewGraphite(opts ...option) *graphite {
 	graphite := &graphite{
 		udp:       relay.NewUDPListener(),
+		tcp:       relay.NewTCPListener(),
 		metrics:   make(chan *plugin.Metric, 1000),
 		done:      make(chan struct{}),
 		isStarted: false,
@@ -53,11 +55,25 @@ func UDPConnectionOption(conn *net.UDPConn) option {
 	}
 }
 
+func TCPListenerOption(conn *net.TCPListener) option {
+	return func(g *graphite) option {
+		if g.isStarted {
+			log.WithFields(log.Fields{
+				"_block": "TCPConnectionOption",
+			}).Warn("option cannot be set.  service already started")
+			return TCPListenerOption(nil)
+		}
+		g.tcp = relay.NewTCPListener(relay.TCPListenerOption(conn))
+		return TCPListenerOption(conn)
+	}
+}
+
 func (g *graphite) Start() error {
 	if g.isStarted {
-		return ErrAlreadyStaretd
+		return ErrAlreadyStarted
 	}
 	g.udp.Start()
+	g.tcp.Start()
 	g.isStarted = true
 	go func() {
 		for {
@@ -68,6 +84,19 @@ func (g *graphite) Start() error {
 					case g.metrics <- metric:
 					default:
 						log.WithFields(log.Fields{
+							"transport":        "udp",
+							"_block":           "graphite",
+							"metric_namespace": strings.Join(metric.Namespace.Strings(), "/"),
+						}).Warn("Dropping metric.  Channel is full")
+					}
+				}
+			case data := <-g.tcp.Data():
+				if metric := parse(string(data)); metric != nil {
+					select {
+					case g.metrics <- metric:
+					default:
+						log.WithFields(log.Fields{
+							"transport":        "tcp",
 							"_block":           "graphite",
 							"metric_namespace": strings.Join(metric.Namespace.Strings(), "/"),
 						}).Warn("Dropping metric.  Channel is full")
@@ -83,6 +112,7 @@ func (g *graphite) Start() error {
 
 func (g *graphite) stop() {
 	g.udp.Stop()
+	g.tcp.Stop()
 	close(g.done)
 }
 

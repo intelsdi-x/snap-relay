@@ -19,7 +19,7 @@ func TestTCPListen(t *testing.T) {
 		conn, err := net.ListenTCP("tcp", tcpAddr)
 		So(err, ShouldBeNil)
 		So(conn, ShouldNotBeNil)
-		server := NewTCPListener(ListenerOption(conn))
+		server := NewTCPListener(TCPListenerOption(conn))
 		So(server, ShouldNotBeNil)
 		err = server.Start()
 		time.Sleep(100 * time.Millisecond)
