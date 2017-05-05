@@ -1,4 +1,4 @@
-package relay
+package protocol
 
 type Receiver interface {
 	Data() chan []byte

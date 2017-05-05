@@ -10,7 +10,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
-	"github.com/intelsdi-x/snap-relay/relay"
+	"github.com/intelsdi-x/snap-relay/protocol"
 )
 
 var (
@@ -18,8 +18,8 @@ var (
 )
 
 type graphite struct {
-	udp       relay.Receiver
-	tcp       relay.Receiver
+	udp       protocol.Receiver
+	tcp       protocol.Receiver
 	metrics   chan *plugin.Metric
 	done      chan struct{}
 	isStarted bool
@@ -27,8 +27,8 @@ type graphite struct {
 
 func NewGraphite(opts ...option) *graphite {
 	graphite := &graphite{
-		udp:       relay.NewUDPListener(),
-		tcp:       relay.NewTCPListener(),
+		udp:       protocol.NewUDPListener(),
+		tcp:       protocol.NewTCPListener(),
 		metrics:   make(chan *plugin.Metric, 1000),
 		done:      make(chan struct{}),
 		isStarted: false,
@@ -42,6 +42,10 @@ func NewGraphite(opts ...option) *graphite {
 
 type option func(g *graphite) option
 
+func (g *graphite) Metrics() chan *plugin.Metric {
+	return g.metrics
+}
+
 func UDPConnectionOption(conn *net.UDPConn) option {
 	return func(g *graphite) option {
 		if g.isStarted {
@@ -50,7 +54,7 @@ func UDPConnectionOption(conn *net.UDPConn) option {
 			}).Warn("option cannot be set.  service already started")
 			return UDPConnectionOption(nil)
 		}
-		g.udp = relay.NewUDPListener(relay.UDPConnectionOption(conn))
+		g.udp = protocol.NewUDPListener(protocol.UDPConnectionOption(conn))
 		return UDPConnectionOption(conn)
 	}
 }
@@ -63,7 +67,7 @@ func TCPListenerOption(conn *net.TCPListener) option {
 			}).Warn("option cannot be set.  service already started")
 			return TCPListenerOption(nil)
 		}
-		g.tcp = relay.NewTCPListener(relay.TCPListenerOption(conn))
+		g.tcp = protocol.NewTCPListener(protocol.TCPListenerOption(conn))
 		return TCPListenerOption(conn)
 	}
 }

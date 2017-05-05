@@ -1,30 +1,38 @@
-package relay
+package protocol
 
 import (
 	"net"
 	"testing"
+
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestUDPListen(t *testing.T) {
+func TestTCPListen(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
-	Convey("Setup UDP server and client", t, func(c C) {
-		udpAddr, err := net.ResolveUDPAddr("udp", "localhost:0")
+	Convey("Setup TCP server and client", t, func() {
+		tcpAddr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 		So(err, ShouldBeNil)
-		So(udpAddr, ShouldNotBeNil)
-		conn, err := net.ListenUDP("udp", udpAddr)
+		So(tcpAddr, ShouldNotBeNil)
+		conn, err := net.ListenTCP("tcp", tcpAddr)
 		So(err, ShouldBeNil)
-		server := NewUDPListener(UDPConnectionOption(conn))
+		So(conn, ShouldNotBeNil)
+		server := NewTCPListener(TCPListenerOption(conn))
+		So(server, ShouldNotBeNil)
 		err = server.Start()
-		c.So(err, ShouldBeNil)
-		Convey("Send/receive udp messages (with newline)", func() {
+		time.Sleep(100 * time.Millisecond)
+		So(err, ShouldBeNil)
+		Convey("Send/receive messages (with newline)", func() {
 			msgs := []string{"hello\n", "foo\n", "bar\n"}
-			clientConn := server.conn
+			tcpAddr, err := net.ResolveTCPAddr("tcp", conn.Addr().String())
+			So(err, ShouldBeNil)
+			So(tcpAddr, ShouldNotBeNil)
+			clientConn, err := net.DialTCP("tcp", nil, tcpAddr)
+			So(err, ShouldBeNil)
 			for _, msg := range msgs {
-				_, err := clientConn.WriteTo([]byte(msg), clientConn.LocalAddr())
+				_, err := clientConn.Write([]byte(msg))
 				So(err, ShouldBeNil)
 			}
 			for _, msg := range msgs {
@@ -40,7 +48,7 @@ func TestUDPListen(t *testing.T) {
 			Convey("without newline", func() {
 				msgs := []string{"hello", "foo", "bar"}
 				for _, msg := range msgs {
-					_, err := clientConn.WriteTo([]byte(msg), clientConn.LocalAddr())
+					_, err := clientConn.Write([]byte(msg))
 					So(err, ShouldBeNil)
 				}
 				select {
@@ -50,14 +58,13 @@ func TestUDPListen(t *testing.T) {
 					break
 				}
 			})
-
 		})
 		server.Stop()
 		select {
 		case <-server.done:
+			time.Sleep(100 * time.Millisecond)
 		case <-time.After(100 * time.Millisecond):
-			t.Error("Timed out waiting for UDP server to stop")
+			t.Error("Timed out waiting for TCP server to stop")
 		}
 	})
-
 }

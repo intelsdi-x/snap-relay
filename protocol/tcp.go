@@ -1,4 +1,4 @@
-package relay
+package protocol
 
 import (
 	"bufio"
@@ -57,6 +57,11 @@ func (t *tcpListener) listen() error {
 		if err != nil {
 			return err
 		}
+		log.WithFields(
+			log.Fields{
+				"addr": t.listener.Addr().String(),
+			},
+		).Debug("tcp listening started")
 	}
 	return nil
 }
@@ -86,7 +91,7 @@ func (t *tcpListener) handleConn(conn net.Conn) {
 						"peer": conn.RemoteAddr().String(),
 					}).Error(err)
 				}
-				continue
+				return
 			}
 			if len(line) > 0 {
 				line = line[:len(line)-1] // removes trailing '/n'

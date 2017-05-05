@@ -1,4 +1,4 @@
-package relay
+package protocol
 
 import (
 	"bytes"
@@ -47,6 +47,11 @@ func (u *udpListener) listen() error {
 		if err != nil {
 			return err
 		}
+		log.WithFields(
+			log.Fields{
+				"addr": u.conn.LocalAddr().String(),
+			},
+		).Debug("udp listening started")
 	}
 
 	return nil
@@ -102,7 +107,7 @@ func (u *udpListener) Start() error {
 							"peer": fmt.Sprintf("%v:%v", peer.IP.String(), peer.Port),
 						}).Error(err)
 					}
-					continue
+					return
 				}
 				if len(line) > 0 {
 					line = line[:len(line)-1] // removes trailing '/n'
