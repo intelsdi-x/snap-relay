@@ -40,7 +40,8 @@ func New() plugin.StreamCollector {
 }
 
 func (r *Relay) StreamMetrics(metrics_in chan []plugin.Metric, metrics_out chan []plugin.Metric, err chan string) error {
-
+	//TODO(JC) get log level from parent
+	log.SetLevel(log.DebugLevel)
 	// - listen on metrics_in
 	//   - start server (collectd, statsd, etc) if requested
 	//      - kick off go func to drain metrics from the server
@@ -75,6 +76,7 @@ func dispatchMetrics(in chan *plugin.Metric, out chan []plugin.Metric) {
 		log.WithFields(
 			log.Fields{
 				"metric": metric.Namespace.String(),
+				"data":   metric.Data,
 			},
 		).Debug("dispatching metrics")
 		//TODO fix this weird derefence

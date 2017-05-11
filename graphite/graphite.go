@@ -73,11 +73,16 @@ func TCPListenerOption(conn *net.TCPListener) option {
 }
 
 func (g *graphite) Start() error {
+	log.Info("Starting graphite relate")
 	if g.isStarted {
 		return ErrAlreadyStarted
 	}
-	g.udp.Start()
-	g.tcp.Start()
+	if err := g.udp.Start(); err != nil {
+		return err
+	}
+	if err := g.tcp.Start(); err != nil {
+		return err
+	}
 	g.isStarted = true
 	go func() {
 		for {
@@ -143,5 +148,6 @@ func parse(data string) *plugin.Metric {
 	return &plugin.Metric{
 		Namespace: ns,
 		Timestamp: timestamp,
+		Data:      line[1],
 	}
 }
