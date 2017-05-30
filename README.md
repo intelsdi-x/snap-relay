@@ -11,8 +11,8 @@ From here you can unload the plugin, see metric list, and use Snap as normal.
 
 ## How to test streaming plugin without Snap:
 Terminal 1: 
-1. `cd relay-plugin`
-2. `go run main.go -stand-alone --log-level 5`
+1. `cd snap-relay`
+2. `go run main.go --stand-alone --log-level 5`
 
 Terminal 2:
 1. `curl localhost:8181`
