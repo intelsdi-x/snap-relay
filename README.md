@@ -18,11 +18,11 @@ Terminal 2:
 1. `curl localhost:8181`
 
 Terminal 3:
-1. `cd relay-plugin`
+1. `cd snap-relay`
 2. `go run client/main.go <number from preamble print out>`
 
 Terminal 2: 
-1. `echo "test.first 10 `date +%s`"|nc -c localhost <number from TCP listener>`
+1. ```echo "test.first 10 `date +%s`"|nc -c localhost <number from TCP listener>```
 
 Terminal 1:
 output debug messages!  <- it worked! 
