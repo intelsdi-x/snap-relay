@@ -51,8 +51,7 @@ func main() {
 	c, err := client.NewStreamCollectorGrpcClient(
 		os.Args[1],
 		5*time.Second,
-		nil,
-		false,
+		client.SecurityTLSOff(),
 	)
 	if err != nil {
 		panic(err)

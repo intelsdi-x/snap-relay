@@ -20,6 +20,7 @@ package main
 
 import (
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
+	"github.com/intelsdi-x/snap-relay/graphite"
 	"github.com/intelsdi-x/snap-relay/relay"
 )
 
@@ -29,5 +30,6 @@ const (
 )
 
 func main() {
-	plugin.StartStreamCollector(relay.New(), pluginName, pluginVersion)
+	plugin.Flags = append(plugin.Flags, graphite.TCPListAddrFlag)
+	plugin.StartStreamCollector(relay.New(graphite.TCPListenAddrOption(&graphite.TCPAddr)), pluginName, pluginVersion)
 }

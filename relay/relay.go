@@ -37,9 +37,9 @@ type Relay struct {
 	graphiteServer relayMetrics
 }
 
-func New() plugin.StreamCollector {
+func New(opts ...graphite.Option) plugin.StreamCollector {
 	return &Relay{
-		graphiteServer: graphite.NewGraphite(),
+		graphiteServer: graphite.NewGraphite(opts...),
 	}
 }
 
@@ -50,10 +50,10 @@ func (r *Relay) StreamMetrics(metrics_in chan []plugin.Metric, metrics_out chan 
 	//   - start server (collectd, statsd, etc) if requested
 	//      - kick off go func to drain metrics from the server
 	//		- emit messages received from server.Metrics() on metrics_out
-	log.Debug("starting StreamMetrics")
-	graphiteDispatchStarted := false
-	r.graphiteServer.Start()
 	for metrics := range metrics_in {
+		log.Debug("starting StreamMetrics")
+		graphiteDispatchStarted := false
+		r.graphiteServer.Start()
 		log.WithFields(
 			log.Fields{
 				"len(metrics)": len(metrics),

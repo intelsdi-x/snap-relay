@@ -31,6 +31,8 @@ import (
 )
 
 type tcpListener struct {
+	// addr is in the form addr:port (e.g. 127.0.0.1:1234)
+	addr     *string
 	data     chan []byte
 	listener *net.TCPListener
 	done     chan struct{}
@@ -57,6 +59,14 @@ func TCPListenerOption(listener *net.TCPListener) tcpOption {
 	}
 }
 
+func TCPListenAddrOption(addr *string) tcpOption {
+	return func(t *tcpListener) tcpOption {
+		prev := t.addr
+		t.addr = addr
+		return TCPListenAddrOption(prev)
+	}
+}
+
 func (t *tcpListener) Data() chan []byte {
 	return t.data
 }
@@ -67,7 +77,11 @@ func (t *tcpListener) Stop() {
 
 func (t *tcpListener) listen() error {
 	if t.listener == nil {
-		tcpAddr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+		addr := "localhost:0"
+		if t.addr != nil {
+			addr = *t.addr
+		}
+		tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 		if err != nil {
 			return err
 		}
