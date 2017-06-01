@@ -26,30 +26,23 @@ import (
 	"github.com/intelsdi-x/snap-relay/graphite"
 )
 
-//TODO rename :)
 type relayMetrics interface {
 	Metrics() chan *plugin.Metric
 	Start() error
 }
 
-//TODO consider not exporting
-type Relay struct {
+type relay struct {
 	graphiteServer relayMetrics
 }
 
 func New(opts ...graphite.Option) plugin.StreamCollector {
-	return &Relay{
+	return &relay{
 		graphiteServer: graphite.NewGraphite(opts...),
 	}
 }
 
-func (r *Relay) StreamMetrics(metrics_in chan []plugin.Metric, metrics_out chan []plugin.Metric, err chan string) error {
-	//TODO(JC) get log level from parent
-	log.SetLevel(log.DebugLevel)
-	// - listen on metrics_in
-	//   - start server (collectd, statsd, etc) if requested
-	//      - kick off go func to drain metrics from the server
-	//		- emit messages received from server.Metrics() on metrics_out
+func (r *relay) StreamMetrics(metrics_in chan []plugin.Metric, metrics_out chan []plugin.Metric, err chan string) error {
+	log.SetLevel(log.Level(plugin.LogLevel))
 	for metrics := range metrics_in {
 		log.Debug("starting StreamMetrics")
 		graphiteDispatchStarted := false
@@ -74,7 +67,6 @@ func (r *Relay) StreamMetrics(metrics_in chan []plugin.Metric, metrics_out chan 
 	return nil
 }
 
-//TODO consider refactoring to make out chan (the lib) have a chan of plugin.Metric instead of the array
 func dispatchMetrics(in chan *plugin.Metric, out chan []plugin.Metric) {
 	for metric := range in {
 		log.WithFields(
@@ -83,7 +75,6 @@ func dispatchMetrics(in chan *plugin.Metric, out chan []plugin.Metric) {
 				"data":   metric.Data,
 			},
 		).Debug("dispatching metrics")
-		//TODO fix this weird derefence
 		out <- []plugin.Metric{*metric}
 	}
 }
@@ -98,7 +89,7 @@ func dispatchMetrics(in chan *plugin.Metric, out chan []plugin.Metric) {
 
 	The metrics returned will be advertised to users who list all the metrics and will become targetable by tasks.
 */
-func (r *Relay) GetMetricTypes(cfg plugin.Config) ([]plugin.Metric, error) {
+func (r *relay) GetMetricTypes(cfg plugin.Config) ([]plugin.Metric, error) {
 	mts := []plugin.Metric{}
 	vals := []string{"collectd", "statsd"}
 	for _, val := range vals {
@@ -113,7 +104,7 @@ func (r *Relay) GetMetricTypes(cfg plugin.Config) ([]plugin.Metric, error) {
 }
 
 // GetConfigPolicy() returns the config policy for your plugin
-func (r *Relay) GetConfigPolicy() (plugin.ConfigPolicy, error) {
+func (r *relay) GetConfigPolicy() (plugin.ConfigPolicy, error) {
 	policy := plugin.NewConfigPolicy()
 
 	policy.AddNewStringRule([]string{"relay", "collectd"},
