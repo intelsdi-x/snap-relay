@@ -31,9 +31,12 @@ import (
 	"github.com/intelsdi-x/snap/core"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/intelsdi-x/snap/core/cdata"
+	"github.com/intelsdi-x/snap/core/ctypes"
 )
 
 func main() {
+	log.SetLevel(log.DebugLevel)
 	sigs := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -44,7 +47,6 @@ func main() {
 		done <- true
 	}()
 
-	log.SetLevel(log.DebugLevel)
 	if len(os.Args) != 2 {
 		log.Fatal("this program expects a single arg for the host and port example: localhost:1234")
 	}
@@ -56,7 +58,18 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	metricsOut, errOut, err := c.StreamMetrics([]core.Metric{plugin.MetricType{Namespace_: core.NewNamespace("relay", "collectd")}})
+
+	cfg := cdata.NewNode()
+	cfg.AddItem("MaxCollectDuration", ctypes.ConfigValueInt{Value: 5000000000})
+	cfg.AddItem("MaxMetricsBuffer", ctypes.ConfigValueInt{Value: 2})
+	requested_metrics := []core.Metric{
+		plugin.MetricType{
+			Namespace_: core.NewNamespace("relay", "collectd"),
+			Config_:    cfg,
+		},
+	}
+
+	metricsOut, errOut, err := c.StreamMetrics(requested_metrics)
 	if err != nil {
 		panic(err)
 	}
