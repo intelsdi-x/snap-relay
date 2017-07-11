@@ -1,3 +1,21 @@
+/*
+http://www.apache.org/licenses/LICENSE-2.0.txt
+
+Copyright 2017 Intel Corporation
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package graphite
 
 import (
@@ -58,6 +76,10 @@ func TestGraphite(t *testing.T) {
 			So(len(graphite.metrics), ShouldEqual, 0)
 		})
 		Convey("sends valid UDP data", func() {
+			// Add channel to ChannelMgr; this happens when stream is started
+			myCh := make(chan *plugin.Metric, 1000)
+			graphite.channelMgr.Add(myCh)
+
 			msgs := []string{
 				"myhost_example_com.cpu-2.cpu-idle 98.6103 1329168255\n",
 				"myhost_example_com.cpu-2.cpu-nice 0 1329168255\n",
@@ -68,24 +90,25 @@ func TestGraphite(t *testing.T) {
 				So(err, ShouldBeNil)
 			}
 			time.Sleep(100 * time.Millisecond)
-			So(len(graphite.metrics), ShouldEqual, 3)
+			So(len(myCh), ShouldEqual, 3)
 			Convey("sends valid TCP data", func() {
 				for _, msg := range msgs {
 					_, err := tcpClient.Write([]byte(msg))
 					So(err, ShouldBeNil)
 				}
 				time.Sleep(100 * time.Millisecond)
-				So(len(graphite.metrics), ShouldEqual, 6)
+				So(len(myCh), ShouldEqual, 6)
 				Convey("Reads metrics from the buffer", func() {
-					So(
-						<-graphite.metrics,
-						ShouldResemble,
-						&plugin.Metric{
-							Namespace: plugin.NewNamespace(
-								"collectd", "myhost_example_com", "cpu-2", "cpu-idle"),
-							Timestamp: time.Unix(1329168255, 0),
-						},
-					)
+					select {
+					case met := <-myCh:
+						So(
+							met.Namespace.String(),
+							ShouldResemble,
+							"/collectd/myhost_example_com/cpu-2/cpu-idle",
+						)
+					case <-time.After(100 * time.Millisecond):
+						t.Fail()
+					}
 				})
 			})
 		})
