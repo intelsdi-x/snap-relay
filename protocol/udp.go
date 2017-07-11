@@ -1,4 +1,22 @@
-package relay
+/*
+http://www.apache.org/licenses/LICENSE-2.0.txt
+
+Copyright 2017 Intel Corporation
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package protocol
 
 import (
 	"bytes"
@@ -8,15 +26,17 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 )
 
 type udpListener struct {
+	port *int
 	data chan []byte
 	conn *net.UDPConn
 	done chan struct{}
 }
 
-func NewUDPListener(opts ...option) *udpListener {
+func NewUDPListener(opts ...udpOption) *udpListener {
 	listener := &udpListener{
 		data: make(chan []byte, 100),
 		done: make(chan struct{}),
@@ -27,19 +47,33 @@ func NewUDPListener(opts ...option) *udpListener {
 	return listener
 }
 
-type option func(u *udpListener) option
+type udpOption func(u *udpListener) udpOption
 
-func UDPConnectionOption(conn *net.UDPConn) option {
-	return func(u *udpListener) option {
+func UDPConnectionOption(conn *net.UDPConn) udpOption {
+	return func(u *udpListener) udpOption {
 		prev := u.conn
 		u.conn = conn
 		return UDPConnectionOption(prev)
 	}
 }
 
+func UDPListenPortOption(port *int) udpOption {
+	return func(u *udpListener) udpOption {
+		prev := u.port
+		u.port = port
+		return UDPListenPortOption(prev)
+	}
+}
+
 func (u *udpListener) listen() error {
 	if u.conn == nil {
-		udpAddr, err := net.ResolveUDPAddr("udp", "localhost:0")
+		udpAddr, err := net.ResolveUDPAddr(
+			"udp",
+			fmt.Sprintf("%v:%v",
+				plugin.ListenAddr,
+				*u.port,
+			),
+		)
 		if err != nil {
 			return err
 		}
@@ -47,6 +81,11 @@ func (u *udpListener) listen() error {
 		if err != nil {
 			return err
 		}
+		log.WithFields(
+			log.Fields{
+				"addr": u.conn.LocalAddr().String(),
+			},
+		).Debug("udp listening started")
 	}
 
 	return nil
@@ -111,7 +150,7 @@ func (u *udpListener) Start() error {
 						log.WithFields(log.Fields{
 							"peer": peer.String(),
 							"line": string(line),
-						}).Debug("recieved line")
+						}).Debug("received line")
 					default:
 						log.WithFields(log.Fields{
 							"peer":          peer.String(),

@@ -1,7 +1,26 @@
-package relay
+/*
+http://www.apache.org/licenses/LICENSE-2.0.txt
+
+Copyright 2017 Intel Corporation
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package protocol
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 	"strings"
 
@@ -10,9 +29,11 @@ import (
 	"io"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 )
 
 type tcpListener struct {
+	port     *int
 	data     chan []byte
 	listener *net.TCPListener
 	done     chan struct{}
@@ -39,6 +60,14 @@ func TCPListenerOption(listener *net.TCPListener) tcpOption {
 	}
 }
 
+func TCPListenPortOption(port *int) tcpOption {
+	return func(t *tcpListener) tcpOption {
+		prev := t.port
+		t.port = port
+		return TCPListenPortOption(prev)
+	}
+}
+
 func (t *tcpListener) Data() chan []byte {
 	return t.data
 }
@@ -49,7 +78,11 @@ func (t *tcpListener) Stop() {
 
 func (t *tcpListener) listen() error {
 	if t.listener == nil {
-		tcpAddr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+		addr := fmt.Sprintf("%v:0", plugin.ListenAddr)
+		if t.port != nil {
+			addr = fmt.Sprintf("%v:%v", plugin.ListenAddr, *t.port)
+		}
+		tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 		if err != nil {
 			return err
 		}
@@ -57,6 +90,11 @@ func (t *tcpListener) listen() error {
 		if err != nil {
 			return err
 		}
+		log.WithFields(
+			log.Fields{
+				"addr": t.listener.Addr().String(),
+			},
+		).Debug("tcp listening started")
 	}
 	return nil
 }
@@ -86,7 +124,7 @@ func (t *tcpListener) handleConn(conn net.Conn) {
 						"peer": conn.RemoteAddr().String(),
 					}).Error(err)
 				}
-				continue
+				return
 			}
 			if len(line) > 0 {
 				line = line[:len(line)-1] // removes trailing '/n'
@@ -95,7 +133,7 @@ func (t *tcpListener) handleConn(conn net.Conn) {
 					log.WithFields(log.Fields{
 						"peer": conn.RemoteAddr().String(),
 						"line": string(line),
-					}).Debug("recieved line")
+					}).Debug("received line")
 				default:
 					log.WithFields(log.Fields{
 						"peer":          conn.RemoteAddr().String(),
