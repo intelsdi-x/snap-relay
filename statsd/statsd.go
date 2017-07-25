@@ -28,7 +28,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
-	"github.com/intelsdi-x/snap-relay/relay"
+	"github.com/intelsdi-x/snap-relay/protocol"
 )
 
 var (
@@ -36,17 +36,17 @@ var (
 )
 
 type statsd struct {
-	udp       relay.Receiver
-	tcp       relay.Receiver
+	udp       protocol.Receiver
+	tcp       protocol.Receiver
 	metrics   chan *plugin.Metric
 	done      chan struct{}
 	isStarted bool
 }
 
-func NewStatsd(opts ...option) *statsd {
+func NewStatsd(opts ...Option) *statsd {
 	statsd := &statsd{
-		udp:       relay.NewUDPListener(),
-		tcp:       relay.NewTCPListener(),
+		udp:       protocol.NewUDPListener(),
+		tcp:       protocol.NewTCPListener(),
 		metrics:   make(chan *plugin.Metric, 1000),
 		done:      make(chan struct{}),
 		isStarted: false,
@@ -58,30 +58,30 @@ func NewStatsd(opts ...option) *statsd {
 	return statsd
 }
 
-type option func(sd *statsd) option
+type Option func(sd *statsd) Option
 
-func UDPConnectionOption(conn *net.UDPConn) option {
-	return func(sd *statsd) option {
+func UDPConnectionOption(conn *net.UDPConn) Option {
+	return func(sd *statsd) Option {
 		if sd.isStarted {
 			log.WithFields(log.Fields{
 				"_block": "UDPConnectionOption",
 			}).Warn("option cannot be set.  service already started")
 			return UDPConnectionOption(nil)
 		}
-		sd.udp = relay.NewUDPListener(relay.UDPConnectionOption(conn))
+		sd.udp = protocol.NewUDPListener(protocol.UDPConnectionOption(conn))
 		return UDPConnectionOption(conn)
 	}
 }
 
-func TCPListenerOption(conn *net.TCPListener) option {
-	return func(sd *statsd) option {
+func TCPListenerOption(conn *net.TCPListener) Option {
+	return func(sd *statsd) Option {
 		if sd.isStarted {
 			log.WithFields(log.Fields{
 				"_block": "TCPConnectionOption",
 			}).Warn("option cannot be set.  service already started")
 			return TCPListenerOption(nil)
 		}
-		sd.tcp = relay.NewTCPListener(relay.TCPListenerOption(conn))
+		sd.tcp = protocol.NewTCPListener(protocol.TCPListenerOption(conn))
 		return TCPListenerOption(conn)
 	}
 }
