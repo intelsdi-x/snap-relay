@@ -1,3 +1,4 @@
+<!-- 
 # TODO: Add Travis build status
 # Check metric types collected in plugin description
 # Check description of the plugin
@@ -6,7 +7,7 @@
 # -- Q: Will snap-relay have a make file? 
 # TODO: Add info on loading a stand-alone plugin in snap/README.md#examples
 # Test all links
-# TODO: Add METRICS.md file
+# TODO: Add METRICS.md file -->
 
 # snap streaming collector plugin - relay
 
@@ -107,128 +108,86 @@ List of collected metrics in [METRICS.md](https://github.com/intelsdi-x/snap-rel
 
 
 
-### Examples
-#### Run the example
-```bash
-./examples/run-cpu-file.sh
-```
+## Examples
+### Download and run the docker-compose example
 
-#### Run the plugin manually
-Example running CPU collector plugin and writing data to a file using [file publisher plugin](https://github.com/intelsdi-x/snap-plugin-publisher-file).
+Details can be found in examples folder <add-link>
 
-Other paths to files should be set according to your configuration, using a file you should indicate where it is located.
 
-In one terminal window, open the Snap daemon (in this case with logging set to 1 and trust disabled):
+### Run the plugin manually
+This example demonstrates running the relay collector plugin and writing to a file using [file publisher plugin](https://github.com/intelsdi-x/snap-plugin-publisher-file).
+
+#### Start Snap and load plugins
+In one terminal window, start the Snap daemon (in this case with logging set to 1 and trust disabled):
 ```
 $ snapteld -l 1 -t 0
 ```
 
-In another terminal window:
+There are two ways of loading pluggins: normally which uses the plugin's binary, and remotely which is available when you run the plugin in stand-alone mode. Below we will demonstrate both ways. 
 
+To load snap-relay plugin via stand-alone mode you must first start the plugin. In another terminal window navigate to your local copy of the snap-relay repository and start the plugin:
 
-Load snap-relay plugin:
 ```
-$ snaptel plugin load snap-relay
-```
-See available metrics for your system:
-```
-$ snaptel metric list
+$ go run main.go stand-alone
 ```
 
-
-
-
-Get influxdb plugin for publishing, appropriate for Linux or Darwin:
+The plugin will list its stand-alone-port value (default is 8182). Next we will load the plugin remotely. Open another terminal window and load the plugin using the stand alone port value as shown below:
 ```
-$ wget  http://snap.ci.snap-telemetry.io/plugins/snap-plugin-publisher-influxdb/latest/linux/x86_64/snap-plugin-publisher-influxdb
+$ snaptel plugin load http://localhost:8182
+```
+
+Next we will load the file plugin by using the binary. We must first get the appropriate version for Linux or Darwin:
+```
+$ wget  http://snap.ci.snap-telemetry.io/plugins/snap-plugin-publisher-file/latest/linux/x86_64/snap-plugin-publisher-file
 ```
 or
 ```
-$ wget  http://snap.ci.snap-telemetry.io/plugins/snap-plugin-publisher-influxdb/latest/darwin/x86_64/snap-plugin-publisher-influxdb
+$ wget  http://snap.ci.snap-telemetry.io/plugins/snap-plugin-publisher-file/latest/darwin/x86_64/snap-plugin-publisher-file
+```
+Load the file plugin for publishing:
+```
+$ snaptel plugin load snap-plugin-publisher-file
 ```
 
-Load influxdb plugin for publishing:
+Create a task manifest (see [exemplary files](https://github.com/intelsdi-x/snap-relay/blob/master/examples/tasks/))
 ```
-$ snaptel plugin load snap-plugin-publisher-influxdb
+---
+  version: 1
+  schedule:
+    type: "streaming"
+  workflow:
+    collect:
+      metrics:
+       /relay/collectd: {}
+      publish:
+        -
+            plugin_name: "file"
+            config:
+                file: "/tmp/published_relay.log"
 ```
-
-Create a task manifest file (see [exemplary files] (https://github.com/intelsdi-x/snap-plugin-collector-cpu/blob/master/examples/tasks/)):
-    
-```json
-{
-  "version": 1,
-  "schedule": {
-    "type": "simple",
-    "interval": "5s"
-  },
-  "workflow": {
-    "collect": {
-      "metrics": {
-        "/intel/procfs/cpu/*/active_jiffies": {},
-        "/intel/procfs/cpu/*/active_percentage": {},
-        "/intel/procfs/cpu/*/guest_jiffies": {},
-        "/intel/procfs/cpu/*/guest_nice_jiffies": {},
-        "/intel/procfs/cpu/*/guest_nice_percentage": {},
-        "/intel/procfs/cpu/*/guest_percentage": {},
-        "/intel/procfs/cpu/*/idle_jiffies": {},
-        "/intel/procfs/cpu/*/idle_percentage": {},
-        "/intel/procfs/cpu/*/iowait_jiffies": {},
-        "/intel/procfs/cpu/*/iowait_percentage": {},
-        "/intel/procfs/cpu/*/irq_jiffies": {},
-        "/intel/procfs/cpu/*/irq_percentage": {},
-        "/intel/procfs/cpu/*/nice_jiffies": {},
-        "/intel/procfs/cpu/*/nice_percentage": {},
-        "/intel/procfs/cpu/*/softirq_jiffies": {},
-        "/intel/procfs/cpu/*/softirq_percentage": {},
-        "/intel/procfs/cpu/*/steal_jiffies": {},
-        "/intel/procfs/cpu/*/steal_percentage": {},
-        "/intel/procfs/cpu/*/system_jiffies": {},
-        "/intel/procfs/cpu/*/system_percentage": {},
-        "/intel/procfs/cpu/*/user_jiffies": {},
-        "/intel/procfs/cpu/*/user_percentage": {},
-        "/intel/procfs/cpu/*/utilization_jiffies": {},
-        "/intel/procfs/cpu/*/utilization_percentage": {}
-      },
-      "config": {
-        "/intel/procfs/cpu": {
-          "proc_path": "/proc"
-        }
-      },
-      "publish": [
-        {
-          "plugin_name": "file",
-          "config": {
-            "file": "/tmp/published_cpu.log"
-          }
-        }
-      ]
-    }
-  }
-}
-```
-
 
 Create a task:
 ```
-$ snaptel task create -t cpu-file.json
-Using task manifest to create task
-Task created
-ID: 02dd7ff4-8106-47e9-8b86-70067cd0a850
-Name: Task-02dd7ff4-8106-47e9-8b86-70067cd0a850
-State: Running
+$ snaptel task create -t /examples/tasks/collectd.yml
 ```
 
-Stop previously created task:
+Send data (do this a few times):
 ```
-$ snaptel task stop 02dd7ff4-8106-47e9-8b86-70067cd0a850
-Task stopped:
-ID: 02dd7ff4-8106-47e9-8b86-70067cd0a850
+$ echo "test.first 13 `date +%s`"|nc -u -c localhost 6124
 ```
+
+See the results:
+```
+$ cat /tmp/published_relay.log
+```
+![screen shot 2017-07-27 at 4 07 03 pm](https://user-images.githubusercontent.com/21182867/28695723-d4b6cc66-72e5-11e7-9057-0c8a2690df80.png)
+
+
 
 ### Roadmap
-There isn't a current roadmap for this plugin, but it is in active development. As we launch this plugin, we do not have any outstanding requirements for the next release. If you have a feature request, please add it as an [issue](https://github.com/intelsdi-x/snap-plugin-collector-cpu/issues/new) and/or submit a [pull request](https://github.com/intelsdi-x/snap-plugin-collector-cpu/pulls).
+There isn't a current roadmap for this plugin, but it is in active development. As we launch this plugin, we do not have any outstanding requirements for the next release. If you have a feature request, please add it as an [issue](https://github.com/intelsdi-x/snap-relay/issues/new) and/or submit a [pull request](https://github.com/intelsdi-x/snap-relay/pulls).
 
-If you have a feature request, please add it as an [issue](https://github.com/intelsdi-x/snap-plugin-collector-cpu/issues).
+If you have a feature request, please add it as an [issue](https://github.com/intelsdi-x/snap-relay/issues).
 
 ## Community Support
 This repository is one of **many** plugins in **Snap**, a powerful telemetry framework. The full project is at http://github.com/intelsdi-x/snap.
@@ -245,4 +204,4 @@ And **thank you!** Your contribution, through code and participation, is incredi
 [Snap](http://github.com:intelsdi-x/snap), along with this plugin, is an Open Source software released under the Apache 2.0 [License](LICENSE).
 
 ## Acknowledgements
-* Author: [Katarzyna Zabrocka](https://github.com/katarzyna-z)
+* Author: [Kelly Lyon](https://github.com/kjlyon)
