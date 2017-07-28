@@ -1,4 +1,5 @@
-### Disclaimer: The location in docker-compose.yml for getting the task manifest publishInfluxdb.yml (line 76) is not going to work right now. 
+### Disclaimer: 
+The location in docker-compose.yml for getting the task manifest publishInfluxdb.yml (line 76) will need to be updated after PR is merged. This is because the location of the docker-compose should no longer point to my branch (github.com/kjlyon/snap-relay/tree/update-readme/examples/docker-example/publishInfluxdb.yml) but should point to the permenant location of that file in intelsdi-x/snap-relay/examples/docker-example/publishInfluxdb.yml. 
 
 
 
