@@ -7,7 +7,7 @@
 ## Requirements 
  * `docker` and `docker-compose` are **installed** and **configured** 
  * this plugin [downloaded and configured](../../README.md#installation) 
- * build snap-relay for linux by running `GOOS=linux go build -o snap-relay main.go` from the top level of the snap-relay repo
+ * build snap-relay for Linux by running `GOOS=linux go build -o snap-relay main.go` from the top level of the snap-relay repo
 
 ## Example
 This [docker-compose example](docker-compose.yml) will load two plugins: snap-relay and snap-plugin-publisher-influxdb, start a [task](publishInfluxdb.yml), and publish metrics to influxDB from the relay collector plugin.
@@ -23,7 +23,7 @@ Check that the two plugins and the task manifest were loaded correctly:
 $ docker logs init
 ```
 
-![docker-compose-up-d](https://user-images.githubusercontent.com/21182867/28698304-5c68b280-72f7-11e7-943c-87303b0945f0.gif)
+![docker-compose-new-take3](https://user-images.githubusercontent.com/21182867/28733581-b1e76b76-7391-11e7-810e-80bdcd219ec6.gif)
 
 
 ### Explore the relay container
