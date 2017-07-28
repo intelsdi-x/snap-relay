@@ -1,0 +1,17 @@
+---
+  version: 1
+  schedule:
+    type: "streaming"
+  workflow:
+    collect:
+      metrics:
+        /relay/collectd: {}
+      publish:
+        -
+            plugin_name: "influxdb"
+            config:
+                host: influxdb
+                port: 8086
+                database: "snap"
+                user: "admin"
+                password: "admin"
