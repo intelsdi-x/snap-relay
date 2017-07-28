@@ -1,8 +1,8 @@
 <!-- 
 # Check metric types collected in plugin description
 # Check description of the plugin
+# Check description of metrics collected
 # TODO: Add info on loading a stand-alone plugin in snap/README.md#examples
-# TODO: Add METRICS.md file
 # Run pluginsync -> Will add CONTRIBUTING.md and makefile and travis build status (?)-->
 
 # snap streaming collector plugin - relay
@@ -57,8 +57,7 @@ This builds the plugin in `/build/$GOOS/$GOARCH`
 
 ## Documentation
 ### Collected Metrics
-Collected metrics have namespace in following format: `/intel/relay/graphite` and `/intel/relay/statsd`.
-List of collected metrics in [METRICS.md](https://github.com/intelsdi-x/snap-relay/blob/master/METRICS.md)
+The snap-relay plugin allows access to any metric that is exposed by [Collectd](https://collectd.org/) or [Statsd](https://github.com/etsy/statsd) and is publishable to [Graphite](https://graphiteapp.org/). The collected metrics have namespace in following format: `/intel/relay/graphite` and `/intel/relay/statsd`.
 
 
 ## Examples
