@@ -2,7 +2,7 @@
 
 
 
-# Running an example
+# Running an example in docker-compose
 
 ## Requirements 
  * `docker` and `docker-compose` are **installed** and **configured** 
@@ -10,15 +10,15 @@
  * build snap-relay for linux by running `GOOS=linux go build -o snap-relay main.go` from the top level of the snap-relay repo
 
 ## Example
-[This](/tasks/publishInfluxdb.yml) example task will publish metrics to **influxdb** from a relay collector plugin.
+This [docker-compose example](docker-compose.yml) will load two plugins: snap-relay and snap-plugin-publisher-influxdb, start a [task](publishInfluxdb.yml), and publish metrics to influxDB from the relay collector plugin.
 
 ### Start your containers
-In the docker-example directory of this plugin run,
+In a terminal window navigate to the docker-example directory of this plugin and run,
 ```
 $ docker-compose up -d
 ```
 
-Check that the two plugins, and the task manifest were loaded correctly:
+Check that the two plugins and the task manifest were loaded correctly:
 ```
 $ docker logs init
 ```
@@ -37,12 +37,13 @@ To exit the container, `$ exit`.
 
 ![relay-container-take2](https://user-images.githubusercontent.com/21182867/28698514-d7ba2d1e-72f8-11e7-921d-62e4d39010ff.gif)
 
-### Explore the influxdb container and influx database
+### Explore the influxDB container and influx database
 ```
 $ docker exec -it influxdb bash
 ```
-The above command will drop you into a bash terminal in the influxdb container. 
-To access the influx database first type, `$ influx`.  
+The above command will drop you into a bash terminal in the influxDB container. 
+To access the influx database first type, 
+```$ influx````  
 
 Specify which database you want to use:
 ```
@@ -56,6 +57,7 @@ To see the metrics from a specific series,
 ```
 $ select * from "<SOME_SERIES>"
 ```
+Visit [docs.influxdata.com](https://docs.influxdata.com/influxdb/v1.3/tools/shell/) to see the full list of capabilities of the influxDB interactive shell. 
 
 To close the container, `$ exit` and `$ exit` again. 
 

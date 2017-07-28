@@ -1,19 +1,15 @@
 <!-- 
-# TODO: Add Travis build status
 # Check metric types collected in plugin description
 # Check description of the plugin
-# Is go version section correct?
-# If plugin name changes make sure all instances in this doc are fixed
-# -- Q: Will snap-relay have a make file? 
 # TODO: Add info on loading a stand-alone plugin in snap/README.md#examples
-# Test all links
-# TODO: Add METRICS.md file -->
+# TODO: Add METRICS.md file
+# Run pluginsync -> Will add CONTRIBUTING.md and makefile and travis build status (?)-->
 
 # snap streaming collector plugin - relay
 
 This plugin collects metrics from /relay/statsd and /relay/graphite which gather information about statsd and collectd relay protocols respectufully.  
 
-It's used in the [Snap framework](http://github.com:intelsdi-x/snap).
+It's used in the [Snap framework](https://github.com/intelsdi-x/snap).
 
 1. [Getting Started](#getting-started)
   * [System Requirements](#system-requirements)
@@ -57,41 +53,6 @@ This builds the plugin in `/build/$GOOS/$GOARCH`
 
 ### Configuration and Usage
 * Set up the [Snap framework](https://github.com/intelsdi-x/snap/blob/master/README.md#getting-started)
-* If /proc resides in a different directory, say for example by mounting host /proc inside a container at /hostproc, a proc_path configuration item can be added to snapteld global config or as part of the task manifest for the metrics to be collected.
-
-As part of snapteld global config
-
-```yaml
----
-control:
-  plugins:
-    collector:
-      cpu:
-        all:
-          proc_path: /hostproc
-```
-
-Or as part of the task manifest
-
-```json
-{
-...
-    "workflow": {
-        "collect": {
-            "metrics": {
-	      "/intel/relay/collectd" : {}
-	    },
-	    "config": {
-	      "/intel/relay/collectd": {
-                "collectdPort": "6126"
-	      }
-	    },
-	    ...
-       },
-    },
-...
-```
-
 * Load the plugin and create a task, see example in [Examples](https://github.com/intelsdi-x/snap-relay/blob/master/README.md#examples).
 
 ## Documentation
@@ -100,18 +61,10 @@ Collected metrics have namespace in following format: `/intel/relay/graphite` an
 List of collected metrics in [METRICS.md](https://github.com/intelsdi-x/snap-relay/blob/master/METRICS.md)
 
 
-
-
-
-//Editted up to this point 
-
-
-
-
 ## Examples
 ### Download and run the docker-compose example
 
-Details can be found in examples folder <add-link>
+Details can be found in [docker-compose example](/examples/docker-example/) folder.
 
 
 ### Run the plugin manually
@@ -123,20 +76,20 @@ In one terminal window, start the Snap daemon (in this case with logging set to 
 $ snapteld -l 1 -t 0
 ```
 
-There are two ways of loading pluggins: normally which uses the plugin's binary, and remotely which is available when you run the plugin in stand-alone mode. Below we will demonstrate both ways. 
+There are two ways of loading plugins: normally which uses the plugin's binary, and remotely which is available when you run the plugin in stand-alone mode. Below we will demonstrate both ways. 
 
-To load snap-relay plugin via stand-alone mode you must first start the plugin. In another terminal window navigate to your local copy of the snap-relay repository and start the plugin:
+To load snap-relay plugin in stand-alone mode you must first start the plugin. In another terminal window navigate to your local copy of the snap-relay repository and start the plugin:
 
 ```
 $ go run main.go stand-alone
 ```
 
-The plugin will list its stand-alone-port value (default is 8182). Next we will load the plugin remotely. Open another terminal window and load the plugin using the stand alone port value as shown below:
+The plugin will list its stand-alone-port value (default is 8182). Open another terminal window and load the plugin remotely by using the stand-alone port value as shown below:
 ```
 $ snaptel plugin load http://localhost:8182
 ```
 
-Next we will load the file plugin by using the binary. We must first get the appropriate version for Linux or Darwin:
+Next, we will load the file plugin by using the binary. We must first get the appropriate version for Linux or Darwin:
 ```
 $ wget  http://snap.ci.snap-telemetry.io/plugins/snap-plugin-publisher-file/latest/linux/x86_64/snap-plugin-publisher-file
 ```
@@ -149,7 +102,7 @@ Load the file plugin for publishing:
 $ snaptel plugin load snap-plugin-publisher-file
 ```
 
-Create a task manifest (see [exemplary files](https://github.com/intelsdi-x/snap-relay/blob/master/examples/tasks/))
+Create a task manifest (see [exemplary files](/examples/tasks/))
 ```
 ---
   version: 1
@@ -201,7 +154,7 @@ There's more than one way to give back, from examples to blogs to code updates. 
 And **thank you!** Your contribution, through code and participation, is incredibly important to us.
 
 ## License
-[Snap](http://github.com:intelsdi-x/snap), along with this plugin, is an Open Source software released under the Apache 2.0 [License](LICENSE).
+[Snap](https://github.com/intelsdi-x/snap), along with this plugin, is an Open Source software released under the Apache 2.0 [License](LICENSE).
 
 ## Acknowledgements
 * Author: [Kelly Lyon](https://github.com/kjlyon)
