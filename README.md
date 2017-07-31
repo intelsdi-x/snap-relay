@@ -134,7 +134,32 @@ $ cat /tmp/published_relay.log
 ```
 ![screen shot 2017-07-27 at 4 07 03 pm](https://user-images.githubusercontent.com/21182867/28695723-d4b6cc66-72e5-11e7-9057-0c8a2690df80.png)
 
+### Running the Built-In Client
 
+Same as the example above, **start snap-relay** by running the following command in the root of your snap-relay repo:
+```
+go run main.go --stand-alone --log-level 5
+```
+
+Now, open a new terminal and type,
+```
+curl localhost:8182
+```
+This will print out the **preamble** for the snap-relay plugin. From this, look for where it says `"ListenAddress"`. Copy the address that is printed there, it will look something like this: `"127.0.0.1:62283"`.
+
+In a third terminal, navigate to your snap-relay repo again and **start the built-in client**,
+```
+go run client/main.go "<number_from_preamble>"
+```
+
+Now we will **send data** and watch it be sent by snap-relay and received in the client. Back in your second terminal type the following command. The default TCP_listen_port is `6124`. Unless you manually set it, that is what it will be,  
+```
+echo "test.first 10 `date +%s`"|nc -c localhost 6124
+```
+
+Repeat that above command a couple times. Each time, you should see a `dispatching metrics` log message in snap-relay and a new metric appear in the client. 
+
+![run-builtin-client-take2](https://user-images.githubusercontent.com/21182867/28794816-86d6a692-75ec-11e7-8cb0-0b5f44c29e62.gif)
 
 ### Roadmap
 There isn't a current roadmap for this plugin, but it is in active development. As we launch this plugin, we do not have any outstanding requirements for the next release. If you have a feature request, please add it as an [issue](https://github.com/intelsdi-x/snap-relay/issues/new) and/or submit a [pull request](https://github.com/intelsdi-x/snap-relay/pulls).
