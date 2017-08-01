@@ -7,7 +7,7 @@
 
 # snap streaming collector plugin - relay
 
-This plugin collects metrics from /relay/statsd and /relay/graphite which gather information about statsd and collectd relay protocols respectufully.  
+This plugin collects metrics from `/intel/relay/statsd` and `/intel/relay/collectd` which gather information about statsd and collectd relay protocols respectufully.  
 
 It's used in the [Snap framework](https://github.com/intelsdi-x/snap).
 
@@ -57,13 +57,21 @@ This builds the plugin in `/build/$GOOS/$GOARCH`
 
 ## Documentation
 ### Collected Metrics
-The snap-relay plugin allows access to any metric that is exposed by [Collectd](https://collectd.org/) or [Statsd](https://github.com/etsy/statsd) and is publishable to [Graphite](https://graphiteapp.org/). The collected metrics have namespace in following format: `/intel/relay/graphite` and `/intel/relay/statsd`.
-
+The snap-relay plugin allows access to any metric that is exposed by [Collectd](https://collectd.org/) or [Statsd](https://github.com/etsy/statsd) and is publishable to [Graphite](https://graphiteapp.org/). 
+Requests can be made in a Snap task manifest for:
+* `/intel/relay/collectd` to stream metrics from graphite in collectd format,
+* `/intel/relay/statsd` to stream metrics from statsd
 
 ## Examples
+The following examples verify that incomming data to the graphite port (default 6124) in the form of collectd is streamed by snap-relay and will be available to the Snap workflow. Included are examples for:
+* [Running in docker-compose](#download-and-run-the-docker-compose-example)
+* [Running the plugin manually](#run-the-plugin-manually)
+* [Running plugin with built-in client](#running-the-built-in-client)
+
+
 ### Download and run the docker-compose example
 
-Details can be found in [docker-compose example](/examples/docker-example/) folder.
+Details can be found in [docker-compose example](/examples/docker-example/) folder. 
 
 
 ### Run the plugin manually
@@ -83,7 +91,7 @@ To load snap-relay plugin in stand-alone mode you must first start the plugin. I
 $ go run main.go stand-alone
 ```
 
-The plugin will list its stand-alone-port value (default is 8182). Open another terminal window and load the plugin remotely by using the stand-alone port value as shown below:
+The plugin will list its `stand-alone-port` value (default is 8182). Open another terminal window and load the plugin remotely by using the stand-alone port value as shown below:
 ```
 $ snaptel plugin load http://localhost:8182
 ```
@@ -110,7 +118,7 @@ Create a task manifest (see [exemplary files](/examples/tasks/))
   workflow:
     collect:
       metrics:
-       /relay/collectd: {}
+       /intel/relay/collectd: {}
       publish:
         -
             plugin_name: "file"

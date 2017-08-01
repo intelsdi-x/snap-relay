@@ -5,7 +5,7 @@
   workflow:
     collect:
       metrics:
-        /relay/collectd: {}
+        /intel/relay/collectd: {}
       publish:
         -
             plugin_name: "influxdb"

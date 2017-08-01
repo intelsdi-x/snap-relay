@@ -130,11 +130,11 @@ func (r *relay) GetMetricTypes(cfg plugin.Config) ([]plugin.Metric, error) {
 func (r *relay) GetConfigPolicy() (plugin.ConfigPolicy, error) {
 	policy := plugin.NewConfigPolicy()
 
-	policy.AddNewStringRule([]string{"relay", "collectd"},
+	policy.AddNewStringRule([]string{"intel", "relay", "collectd"},
 		"collectdPort",
 		false)
 
-	policy.AddNewStringRule([]string{"relay", "statsd"},
+	policy.AddNewStringRule([]string{"intel", "relay", "statsd"},
 		"statsdPort",
 		false)
 
