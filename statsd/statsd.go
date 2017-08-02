@@ -60,6 +60,10 @@ func NewStatsd(opts ...Option) *statsd {
 
 type Option func(sd *statsd) Option
 
+func (o Option) Type() string {
+	return "statsd"
+}
+
 func UDPConnectionOption(conn *net.UDPConn) Option {
 	return func(sd *statsd) Option {
 		if sd.isStarted {
