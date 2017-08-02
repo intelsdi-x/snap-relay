@@ -7,7 +7,7 @@
 
 # snap streaming collector plugin - relay
 
-This plugin collects metrics from `/intel/relay/statsd` and `/intel/relay/collectd` which gather information about statsd and collectd relay protocols respectufully.  
+Snap-relay is a streaming Snap plugin that starts listeners for collecting metrics from statsd and/or collectd. Received metrics are dispatched to the Snap framework with the namespaces `/intel/relay/statsd` and `/intel/relay/collectd` respectively.
 
 It's used in the [Snap framework](https://github.com/intelsdi-x/snap).
 
@@ -57,17 +57,17 @@ This builds the plugin in `/build/$GOOS/$GOARCH`
 
 ## Documentation
 ### Collected Metrics
-The snap-relay plugin allows access to any metric that is exposed by [Collectd](https://collectd.org/) or [Statsd](https://github.com/etsy/statsd) and is publishable to [Graphite](https://graphiteapp.org/). 
+The snap-relay plugin allows access to any metric that is exposed by [Collectd](https://collectd.org/) or [Statsd](https://github.com/etsy/statsd). Additionally, any collectd metric that is published to the snap-relay using the graphite protocol can be published by snap-relay. See the collectd plugin [write_graphite](https://collectd.org/wiki/index.php/Plugin:Write_Graphite) for more details. 
+
 Requests can be made in a Snap task manifest for:
-* `/intel/relay/collectd` to stream metrics from graphite in collectd format,
-* `/intel/relay/statsd` to stream metrics from statsd
+* `/intel/relay/collectd` 
+* `/intel/relay/statsd` 
 
 ## Examples
 The following examples verify that incomming data to the graphite port (default 6124) in the form of collectd is streamed by snap-relay and will be available to the Snap workflow. Included are examples for:
 * [Running in docker-compose](#download-and-run-the-docker-compose-example)
 * [Running the plugin manually](#run-the-plugin-manually)
 * [Running plugin with built-in client](#running-the-built-in-client)
-
 
 ### Download and run the docker-compose example
 
@@ -88,7 +88,7 @@ There are two ways of loading plugins: normally which uses the plugin's binary, 
 To load snap-relay plugin in stand-alone mode you must first start the plugin. In another terminal window navigate to your local copy of the snap-relay repository and start the plugin:
 
 ```
-$ go run main.go stand-alone
+$ snap-relay --stand-alone
 ```
 
 The plugin will list its `stand-alone-port` value (default is 8182). Open another terminal window and load the plugin remotely by using the stand-alone port value as shown below:
@@ -142,32 +142,6 @@ $ cat /tmp/published_relay.log
 ```
 ![screen shot 2017-07-27 at 4 07 03 pm](https://user-images.githubusercontent.com/21182867/28695723-d4b6cc66-72e5-11e7-9057-0c8a2690df80.png)
 
-### Running the Built-In Client
-
-Same as the example above, **start snap-relay** by running the following command in the root of your snap-relay repo:
-```
-go run main.go --stand-alone --log-level 5
-```
-
-Now, open a new terminal and type,
-```
-curl localhost:8182
-```
-This will print out the **preamble** for the snap-relay plugin. From this, look for where it says `"ListenAddress"`. Copy the address that is printed there, it will look something like this: `"127.0.0.1:62283"`.
-
-In a third terminal, navigate to your snap-relay repo again and **start the built-in client**,
-```
-go run client/main.go "<number_from_preamble>"
-```
-
-Now we will **send data** and watch it be sent by snap-relay and received in the client. Back in your second terminal type the following command. The default TCP_listen_port is `6124`. Unless you manually set it, that is what it will be,  
-```
-echo "test.first 10 `date +%s`"|nc -c localhost 6124
-```
-
-Repeat that above command a couple times. Each time, you should see a `dispatching metrics` log message in snap-relay and a new metric appear in the client. 
-
-![run-builtin-client-take2](https://user-images.githubusercontent.com/21182867/28794816-86d6a692-75ec-11e7-8cb0-0b5f44c29e62.gif)
 
 ### Roadmap
 There isn't a current roadmap for this plugin, but it is in active development. As we launch this plugin, we do not have any outstanding requirements for the next release. If you have a feature request, please add it as an [issue](https://github.com/intelsdi-x/snap-relay/issues/new) and/or submit a [pull request](https://github.com/intelsdi-x/snap-relay/pulls).
