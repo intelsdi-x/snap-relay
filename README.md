@@ -22,7 +22,7 @@ It's used in the [Snap framework](https://github.com/intelsdi-x/snap).
   * [Roadmap](#roadmap)
 3. [Community Support](#community-support)
 4. [Contributing](#contributing)
-5. [License](#license-and-authors)
+5. [License](#license)
 6. [Acknowledgements](#acknowledgements)
 
 ## Getting Started
@@ -57,14 +57,16 @@ This builds the plugin in `/build/$GOOS/$GOARCH`
 
 ## Documentation
 ### Collected Metrics
-The snap-relay plugin allows access to any metric that is exposed by [Collectd](https://collectd.org/) or [Statsd](https://github.com/etsy/statsd). Additionally, any collectd metric that is published to the snap-relay using the graphite protocol can be published by snap-relay. See the collectd plugin [write_graphite](https://collectd.org/wiki/index.php/Plugin:Write_Graphite) for more details. 
+The snap-relay plugin allows access to any metric that is exposed by 
+* [Collectd](https://collectd.org/) running with graphite backend (see the collectd [write_graphite](https://collectd.org/wiki/index.php/Plugin:Write_Graphite) plugin for more details)
+* [Statsd](https://github.com/etsy/statsd) running with repeater backend (see the [statsd supported backends](https://github.com/etsy/statsd/blob/master/docs/backend.md) for more details)
 
 Requests can be made in a Snap task manifest for:
 * `/intel/relay/collectd` 
 * `/intel/relay/statsd` 
 
 ## Examples
-The following examples verify that incomming data to the graphite port (default 6124) in the form of collectd is streamed by snap-relay and will be available to the Snap workflow. Included are examples for:
+The following examples show how to stream metrics from collectd (running with Graphite as the backend) into Snap workflow.
 * [Running in docker-compose](#download-and-run-the-docker-compose-example)
 * [Running the plugin manually](#run-the-plugin-manually)
 * [Running plugin with built-in client](#running-the-built-in-client)
@@ -85,13 +87,13 @@ $ snapteld -l 1 -t 0
 
 There are two ways of loading plugins: normally which uses the plugin's binary, and remotely which is available when you run the plugin in stand-alone mode. Below we will demonstrate both ways. 
 
-To load snap-relay plugin in stand-alone mode you must first start the plugin. In another terminal window navigate to your local copy of the snap-relay repository and start the plugin:
+To load snap-relay plugin in stand-alone mode you must first start the plugin. In another terminal window navigate to your local copy of the snap-relay repository and start the plugin binary with flag `--stand-alone`. To define the port on which your plugin is listening, use option `--stand-alone-port`, by default it is 8182.
 
 ```
-$ snap-relay --stand-alone
+$ snap-relay --stand-alone --stand-alone-port 8182
 ```
 
-The plugin will list its `stand-alone-port` value (default is 8182). Open another terminal window and load the plugin remotely by using the stand-alone port value as shown below:
+Open another terminal and load the plugin remotely by using the hostname and port where the stand-alone plugin is running:
 ```
 $ snaptel plugin load http://localhost:8182
 ```

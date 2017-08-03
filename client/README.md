@@ -1,4 +1,4 @@
-The intention of this client is to aid in the development of snap-relay by mocking out the framework. By using this client, we can ensure the  plugin is sending the framework the metrics we were expecting. The client is also used in tests for snap-relay. 
+The intention of this client is to aid in the development of snap-relay by mocking out the framework. By using this client, we can verify the plugin is sending the expected workflow metrics to Snap. The client is also used in tests for snap-relay. 
 
 ### Running the Built-In Client
 
