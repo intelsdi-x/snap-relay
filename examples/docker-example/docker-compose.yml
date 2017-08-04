@@ -1,0 +1,83 @@
+version: '3'
+services:
+  snap:
+    container_name: snap
+    image: intelsdi/snap:alpine_test
+    volumes:
+      # Note: SNAP_PATH needs to be set and valid so that we can map the binaries
+      # into the container.
+      - $GVM_ROOT/pkgsets/go1.7/snap/src/github.com/intelsdi-x/snap/build/linux/x86_64:/opt/snap/bin
+      - $GVM_ROOT/pkgsets/go1.7/snap/src/github.com/intelsdi-x/snap/build/linux/x86_64:/opt/snap/sbin
+    ports:
+      - "8181:8181"
+    depends_on: 
+      - collectd
+      - influxdb
+      - relay
+    links:
+      - relay
+      - influxdb    
+  collectd:
+    container_name: collectd
+    image: revett/collectd
+    environment:
+      CONFIG_TYPE: graphite
+      EP_HOST: relay
+      EP_PORT: 6123
+    links: 
+      - relay
+    depends_on:
+      - relay
+  influxdb:
+    container_name: influxdb
+    image: influxdb
+    ports:
+      - 8086:8086
+      - 8083:8083
+  relay:
+    container_name: relay
+    image: alpine
+    volumes:
+      # Note - please ensure the following: 
+      # - That the path below is to the snap-relay
+      # - That the plugin has been built for Linux and that the binary exists at
+      #   the top level of the project directory
+      - $GVM_ROOT/pkgsets/go1.7/snap/src/github.com/intelsdi-x/snap-relay:/usr/local/bin
+    ports: 
+      - 8182:8182
+      - 5801:5801
+      - 6123:6123
+    entrypoint:
+      - snap-relay
+      - --stand-alone
+      - --stand-alone-port 
+      - "8182"
+      # - --port
+      # - "5801"
+      - --addr
+      - relay
+      # - --graphite-tcp
+      # - "relay:6123"
+  init:
+    container_name: init
+    image: alpine
+    volumes:
+      - $GVM_ROOT/pkgsets/go1.7/snap/src/github.com/intelsdi-x/snap/build/linux/x86_64:/usr/local/bin    
+    links:
+      - snap
+      - relay        
+      - influxdb
+    entrypoint:      
+      - /bin/ash
+      - -c 
+      - "apk add --update curl; \
+         curl -i -XPOST http://influxdb:8086/query --data-urlencode \"q=CREATE DATABASE snap\"; \
+         curl -o /tmp/snap-plugin-publisher-influxdb http://snap.ci.snap-telemetry.io/plugins/snap-plugin-publisher-influxdb/latest/linux/x86_64/snap-plugin-publisher-influxdb; \
+         curl -o /tmp/publishInfluxdb.yml https://github.com/kjlyon/snap-relay/tree/update-readme/examples/docker-example/publishInfluxdb.yml; \
+         snaptel -u http://snap:8181 plugin load /tmp/snap-plugin-publisher-influxdb; \
+         snaptel -u http://snap:8181 plugin load http://relay:8182; \
+         snaptel -u http://snap:8181 task create -t original.yml"
+    depends_on:
+      - snap
+      - relay
+      - influxdb

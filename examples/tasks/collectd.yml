@@ -1,0 +1,13 @@
+---
+  version: 1
+  schedule:
+    type: "streaming"
+  workflow:
+    collect:
+      metrics:
+       /intel/relay/collectd: {}
+      publish:
+        -
+            plugin_name: "file"
+            config:
+                file: "/tmp/published_relay.log"
