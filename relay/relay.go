@@ -25,6 +25,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 	"github.com/intelsdi-x/snap-relay/graphite"
+	"github.com/intelsdi-x/snap-relay/statsd"
 )
 
 const (
@@ -39,11 +40,29 @@ type relayMetrics interface {
 
 type relay struct {
 	graphiteServer relayMetrics
+	statsdServer   relayMetrics
 }
 
-func New(opts ...graphite.Option) plugin.StreamCollector {
+type relayOption interface {
+	Type() string
+}
+
+func New(opts ...relayOption) plugin.StreamCollector {
+	var gOpts []graphite.Option
+	var sOpts []statsd.Option
+	for _, x := range opts {
+
+		switch t := x.(type) {
+		case graphite.Option:
+			gOpts = append(gOpts, t)
+		case statsd.Option:
+			sOpts = append(sOpts, t)
+		}
+	}
+
 	return &relay{
-		graphiteServer: graphite.NewGraphite(opts...),
+		graphiteServer: graphite.NewGraphite(gOpts...),
+		//statsdServer:   statsd.NewStatsd(sOpts...),
 	}
 }
 
@@ -52,7 +71,9 @@ func (r *relay) StreamMetrics(ctx context.Context, metrics_in chan []plugin.Metr
 	for metrics := range metrics_in {
 		log.Debug("starting StreamMetrics")
 		graphiteDispatchStarted := false
+		statsdDispatchStarted := false
 		r.graphiteServer.Start()
+		r.statsdServer.Start()
 		log.WithFields(
 			log.Fields{
 				"len(metrics)": len(metrics),
@@ -79,6 +100,10 @@ func (r *relay) StreamMetrics(ctx context.Context, metrics_in chan []plugin.Metr
 			if !graphiteDispatchStarted && strings.Contains(metric.Namespace.String(), "collectd") {
 				graphiteDispatchStarted = true
 				go dispatchMetrics(ctx, r.graphiteServer.Metrics(ctx), metrics_out)
+			}
+			if !statsdDispatchStarted && strings.Contains(metric.Namespace.String(), "statsd") {
+				statsdDispatchStarted = true
+				go dispatchMetrics(ctx, r.statsdServer.Metrics(ctx), metrics_out)
 			}
 		}
 	}
