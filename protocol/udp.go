@@ -67,13 +67,11 @@ func UDPListenPortOption(port *int) udpOption {
 
 func (u *udpListener) listen() error {
 	if u.conn == nil {
-		udpAddr, err := net.ResolveUDPAddr(
-			"udp",
-			fmt.Sprintf("%v:%v",
-				plugin.ListenAddr,
-				*u.port,
-			),
-		)
+		addr := fmt.Sprintf("%v:0", plugin.ListenAddr)
+		if u.port != nil {
+			addr = fmt.Sprintf("%v:%v", plugin.ListenAddr, *u.port)
+		}
+		udpAddr, err := net.ResolveUDPAddr("udp", addr)
 		if err != nil {
 			return err
 		}
