@@ -84,6 +84,10 @@ func NewGraphite(opts ...Option) *graphite {
 
 type Option func(g *graphite) Option
 
+func (o Option) Type() string {
+	return "graphite"
+}
+
 // Metrics is provided a context used for communicating cancellation.
 func (g *graphite) Metrics(ctx context.Context) chan *plugin.Metric {
 	mchan := make(chan *plugin.Metric, 1000)

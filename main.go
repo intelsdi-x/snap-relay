@@ -22,6 +22,7 @@ import (
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 	"github.com/intelsdi-x/snap-relay/graphite"
 	"github.com/intelsdi-x/snap-relay/relay"
+	"github.com/intelsdi-x/snap-relay/statsd"
 )
 
 const (
@@ -32,10 +33,14 @@ const (
 func main() {
 	plugin.Flags = append(plugin.Flags, graphite.GraphiteTCPListenPortFlag)
 	plugin.Flags = append(plugin.Flags, graphite.GraphiteUDPListenPortFlag)
+	plugin.Flags = append(plugin.Flags, statsd.StatsdTCPListenPortFlag)
+	plugin.Flags = append(plugin.Flags, statsd.StatsdUDPListenPortFlag)
 	plugin.StartStreamCollector(
 		relay.New(
 			graphite.TCPListenPortOption(&graphite.GraphiteTCPPort),
 			graphite.UDPListenPortOption(&graphite.GraphiteUDPPort),
+			statsd.TCPListenPortOption(&statsd.StatsdTCPPort),
+			statsd.UDPListenPortOption(&statsd.StatsdUDPPort),
 		),
 		pluginName,
 		pluginVersion,
