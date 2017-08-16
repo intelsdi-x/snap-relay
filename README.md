@@ -1,10 +1,3 @@
-<!-- 
-# Check metric types collected in plugin description
-# Check description of the plugin
-# Check description of metrics collected
-# TODO: Add info on loading a stand-alone plugin in snap/README.md#examples
-# Run pluginsync -> Will add CONTRIBUTING.md and makefile and travis build status (?)-->
-
 # snap streaming collector plugin - relay
 
 Snap-relay is a streaming Snap plugin that starts listeners for collecting metrics from statsd and/or collectd. Received metrics are dispatched to the Snap framework with the namespaces `/intel/relay/statsd` and `/intel/relay/collectd` respectively.

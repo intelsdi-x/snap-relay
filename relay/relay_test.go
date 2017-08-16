@@ -1,3 +1,5 @@
+// +build small
+
 /*
 http://www.apache.org/licenses/LICENSE-2.0.txt
 
@@ -19,120 +21,28 @@ limitations under the License.
 package relay
 
 import (
-	"fmt"
-	"log"
-	"os"
-	"os/exec"
 	"testing"
 
-	"time"
-
-	"github.com/intelsdi-x/snap/control/plugin/client"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestRelay(t *testing.T) {
-	// string "test -run"
-	fmt.Printf("%s", os.Args)
-	// using os.Exec (or something similiar) to start the server with stand-alone flag
-	// as an alt to the go func
-	// The rest of the test should work as intended
-	//os.Args = []string{os.Args[0], "--stand-alone"}
-	cmd := exec.Command(os.Args[0], "--stand-alone")
-	err := cmd.Start()
-	if err != nil {
-		log.Fatal(err)
-	}
+	r := relay{}
 
-	// go func() {
-	// 	retcode := plugin.StartStreamCollector(New(), "snap-relay", 1) //starts relay
-	// 	fmt.Printf("retcode=%v\n", retcode)
-	// }()
-
-	time.Sleep(2 * time.Second)
-
-	Convey("Test StreamMetrics", t, func() {
-
-		// _, err := http.Get("http://localhost:8182")
-		// So(err, ShouldBeNil)
-
-		_, err := client.NewStreamCollectorGrpcClient(
-			"localhost:8182",
-			5*time.Second,
-			client.SecurityTLSOff(),
-		)
-		if err != nil {
-			panic(err)
-		}
-		//
-		// requested_metrics := []core.Metric{
-		//  ctlplugin.MetricType{
-		//      Namespace_: core.NewNamespace("relay", "collectd"),
-		//  },
-		// }
-		// metricsChan, errChan, err := c.StreamMetrics(requested_metrics)
-		// So(err, ShouldBeNil)
-		// So(metricsChan, ShouldNotBeNil)
-		// So(errChan, ShouldNotBeNil)
-		// cfg := cdata.NewNode()
-		// cfg.AddItem("MaxCollectDuration", ctypes.ConfigValueInt{Value: 5000000000})
-		// cfg.AddItem("MaxMetricsBuffer", ctypes.ConfigValueInt{Value: 2})
-		// requested_metrics := []core.Metric{
-		//  ctlplugin.MetricType{
-		//      Namespace_: core.NewNamespace("animal", "cat"),
-		//      Config_: cfg,
-		//  },
-		// }
-
-		//  rq <- requested_metrics
-
-		//Need to use this (the one actually defined in relay.go)
-		//func (r *relay) StreamMetrics(ctx context.Context, metrics_in chan []plugin.Metric, metrics_out chan []plugin.Metric, err chan string) error {
-		//instead of one below:
-
-		// var d time.Duration = 5
-
-		// ctx, _ := context.WithTimeout(context.Background(), d)
-
-		// chanIn := make(chan []plugin.Metric)
-		// chanOut := make(chan []plugin.Metric)
-		// chanErr := make(chan string)
-
-		// r := relay{}
-		// err = r.StreamMetrics(ctx, chanIn, chanOut, chanErr)
-		// if err != nil {
-		//  panic(err)
-		// }
-
-		// x, y, z := <-chanIn, <-chanOut, <-chanErr
-		// fmt.Printf("x: %v \ny: %v \nz: %v", x, y, z)
-
-		// metricsOut, errOut, err := c.StreamMetrics(requested_metrics)
-		// So(metricsOut, ShouldNotBeEmpty)
-		// So(errOut, ShouldBeNil)
-		// So(err, ShouldBeNil)
-
+	Convey("Test GetMetricTypes", t, func() {
+		Convey("Collect String", func() {
+			mt, err := r.GetMetricTypes(nil)
+			So(err, ShouldBeNil)
+			So(len(mt), ShouldEqual, 2)
+		})
 	})
 
-	// Convey("Test GetMetricTypes", t, func() {
-	//  r := relay{}
+	Convey("Test GetConfigPolicy", t, func() {
+		_, err := r.GetConfigPolicy()
+		Convey("No error returned", func() {
+			So(err, ShouldBeNil)
+		})
+	})
 
-	//  Convey("Collect String", func() {
-	//      mt, err := r.GetMetricTypes(nil)
-	//      So(err, ShouldBeNil)
-	//      So(len(mt), ShouldEqual, 2)
-	//  })
-
-	//	})
-
-	// Convey("Test GetConfigPolicy", t, func() {
-	//  r := relay{}
-	//  _, err := r.GetConfigPolicy()
-
-	//  Convey("No error returned", func() {
-	//      So(err, ShouldBeNil)
-	//  })
-
-	// })
-
+	// Test for StreamMetrics can be found in client/client_test.go as a medium test
 }
