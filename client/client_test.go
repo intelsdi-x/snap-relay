@@ -19,124 +19,127 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
-	"os"
 	"os/exec"
 	"testing"
 	"time"
 
+	"github.com/intelsdi-x/snap/control/plugin"
+	"github.com/intelsdi-x/snap/control/plugin/client"
+	"github.com/intelsdi-x/snap/core"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestClient(t *testing.T) {
-	// string "test -run"
-	fmt.Printf("%s\n", os.Args)
-	// using os.Exec (or something similiar) to start the server with stand-alone flag
-	// as an alt to the go func
-	// The rest of the test should work as intended
-	//os.Args = []string{os.Args[0], "--stand-alone"}
 
-	cmd := exec.Command(os.Args[0], "--stand-alone")
+	cmd := exec.Command("../build/darwin/x86_64/snap-relay", "--stand-alone")
 	err := cmd.Start()
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer cmd.Process.Kill()
 	time.Sleep(2 * time.Second)
 
-	fmt.Printf("****stderr: %v\n", cmd.Stderr)
-	fmt.Printf("****stdOut: %v\n", cmd.Stdout)
+	// fmt.Printf("****pid: %v\n", cmd.Process.Pid)
+	// fmt.Printf("****status: %v\n", cmd.ProcessState)
+	// fmt.Printf("****stderr: %v\n", cmd.Stderr)
+	// fmt.Printf("****stdOut: %v\n", cmd.Stdout)
 
-	// go func() {
-	// 	retcode := plugin.StartStreamCollector(New(), "snap-relay", 1) //starts relay
-	// 	fmt.Printf("retcode=%v\n", retcode)
-	// }()
+	resp, err := http.Get("http://localhost:8182")
+	//	So(err, ShouldBeNil)
+	//	So(resp, ShouldNotBeNil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if resp == nil {
+		log.Fatal("resp should equal nil, actually equals ", resp)
+	}
+	preamble := make(map[string]string)
+	body, err := ioutil.ReadAll(resp.Body)
+	//So(err, ShouldBeNil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	json.Unmarshal(body, &preamble)
+
+	c, err := client.NewStreamCollectorGrpcClient(
+		preamble["ListenAddress"],
+		5*time.Second,
+		client.SecurityTLSOff(),
+	)
+	if err != nil {
+		panic(err)
+	}
 
 	Convey("Test StreamMetrics", t, func() {
-		So(nil, ShouldBeNil)
-
-		_, err := http.Get("http://localhost:8182")
+		requested_metrics := []core.Metric{
+			plugin.MetricType{
+				Namespace_: core.NewNamespace("relay", "collectd"),
+			},
+		}
+		metricsChan, errChan, err := c.StreamMetrics("test-taskID", requested_metrics)
 		So(err, ShouldBeNil)
+		So(metricsChan, ShouldNotBeNil)
+		So(errChan, ShouldNotBeNil)
 
-		// c, err := client.NewStreamCollectorGrpcClient(
-		// 	"localhost:8182",
-		// 	5*time.Second,
-		// 	client.SecurityTLSOff(),
-		// )
-		// if err != nil {
-		// 	panic(err)
-		// }
+		go func() {
+			// 6123 is default port for graphite tcp
+			conn, err := net.Dial("tcp", "localhost:6123")
 
-		// requested_metrics := []core.Metric{
-		// 	ctlplugin.MetricType{
-		// 		Namespace_: core.NewNamespace("relay", "collectd"),
-		// 	},
-		// }
-		// metricsChan, errChan, err := c.StreamMetrics(requested_metrics)
-		// So(err, ShouldBeNil)
-		// So(metricsChan, ShouldNotBeNil)
-		// So(errChan, ShouldNotBeNil)
-		// cfg := cdata.NewNode()
-		// cfg.AddItem("MaxCollectDuration", ctypes.ConfigValueInt{Value: 5000000000})
-		// cfg.AddItem("MaxMetricsBuffer", ctypes.ConfigValueInt{Value: 2})
+			if err != nil {
+				panic(err)
+			}
+			defer conn.Close()
+			time.Sleep(2 * time.Second)
 
-		// requested_metrics := []core.Metric{
-		// 	ctlplugin.MetricType{
-		// 		Namespace_: core.NewNamespace("animal", "cat"),
-		// 		Config_:    cfg,
-		// 	},
-		// }
+			//var timer int64 = 10
+			//t := time.Duration(timer)
+			//for now := time.Now(); time.Since(now) < t; {
+			conn.Write([]byte("THIS IS A MESSAGE"))
+			fmt.Println("Sent message: THIS IS A MESSAGE")
+			//}
+		}()
 
-		//  rq <- requested_metrics
+		t := time.NewTimer(time.Second * 10).C
+		//for {
+		fmt.Println("in select statement... ")
+		select {
+		case <-t:
+			fmt.Printf("In timer case.... \n")
+			break
+		case receivedFromMetricsChan := <-metricsChan:
+			fmt.Printf("In metricsChan case.... received: %v\n", receivedFromMetricsChan)
+			So(receivedFromMetricsChan, ShouldContain, "THIS IS A MESSAGE")
+			break
+		}
+		fmt.Println("after select statement... ")
 
-		//Need to use this (the one actually defined in relay.go)
-		//func (r *relay) StreamMetrics(ctx context.Context, metrics_in chan []plugin.Metric, metrics_out chan []plugin.Metric, err chan string) error {
-		//instead of one below:
+		//}
 
-		// var d time.Duration = 5
-
-		// ctx, _ := context.WithTimeout(context.Background(), d)
-
-		// chanIn := make(chan []plugin.Metric)
-		// chanOut := make(chan []plugin.Metric)
-		// chanErr := make(chan string)
-
-		// r := relay{}
-		// err = r.StreamMetrics(ctx, chanIn, chanOut, chanErr)
-		// if err != nil {
-		//  panic(err)
-		// }
-
-		// x, y, z := <-chanIn, <-chanOut, <-chanErr
-		// fmt.Printf("x: %v \ny: %v \nz: %v", x, y, z)
-
-		// metricsOut, errOut, err := c.StreamMetrics(requested_metrics)
-		// So(metricsOut, ShouldNotBeEmpty)
-		// So(errOut, ShouldBeNil)
-		// So(err, ShouldBeNil)
+		time.Sleep(2 * time.Second)
 
 	})
 
-	// Convey("Test GetMetricTypes", t, func() {
-	// 	r := relay.New()
+	Convey("Test GetMetricTypes", t, func() {
+		Convey("Collect String", func() {
+			mt, err := c.GetMetricTypes(plugin.NewPluginConfigType())
+			So(err, ShouldBeNil)
+			So(len(mt), ShouldEqual, 2)
+		})
 
-	// 	Convey("Collect String", func() {
-	// 		mt, err := r.GetMetricTypes(nil)
-	// 		So(err, ShouldBeNil)
-	// 		So(len(mt), ShouldEqual, 2)
-	// 	})
+	})
 
-	// })
+	Convey("Test GetConfigPolicy", t, func() {
+		_, err := c.GetConfigPolicy()
+		Convey("No error returned", func() {
+			So(err, ShouldBeNil)
+		})
 
-	// Convey("Test GetConfigPolicy", t, func() {
-	// 	r := relay.New()
-	// 	_, err := r.GetConfigPolicy()
-
-	// 	Convey("No error returned", func() {
-	// 		So(err, ShouldBeNil)
-	// 	})
-
-	// })
+	})
 
 }
