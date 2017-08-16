@@ -252,7 +252,10 @@ func parseData(data string) *plugin.Metric {
 		}).Error("invalid metric line")
 		return nil
 	}
-	tags["data_type"] = parseMetricType(lineElems[1])
+	if len(lineElems) > 1 {
+		tags["data_type"] = parseMetricType(lineElems[1])
+
+	}
 	metricElements := strings.Split(lineElems[0], ":")
 	if len(metricElements) != 2 {
 		log.WithFields(log.Fields{

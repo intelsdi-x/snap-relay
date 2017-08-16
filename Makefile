@@ -18,17 +18,30 @@
 
 default: 
 	$(MAKE) deps
-	$(MAKE) all
+	$(MAKE) build
 
 deps:
 	bash -c "./scripts/deps.sh"
-#test:
-	# bash -c "./scripts/test.sh"
+	
+test:
+	bash -c "./scripts/test.sh $(TEST_TYPE)"
+test-legacy:
+	bash -c "./scripts/test.sh legacy"
+test-small:
+	bash -c "./scripts/test.sh small"
+test-medium:
+	bash -c "./scripts/test.sh medium"
+test-large:
+	bash -c "./scripts/test.sh large"
+test-all:
+	$(MAKE) test-small
+	$(MAKE) test-medium
+	$(MAKE) test-large
+#test-all:
+	# $(MAKE) test
+
 		# todo: test.sh first run make (to get binary). Know location of this binary, 
 		# update location of binary in client_test.go ln 44 exec.Command(...)
 		# call $go test -run TestClient
-
-#test-all:
-	# $(MAKE) test
-all: 
+build: 
 	bash -c "./scripts/build.sh"
