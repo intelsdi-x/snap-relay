@@ -26,6 +26,7 @@ import (
 	"net"
 	"net/http"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -36,37 +37,36 @@ import (
 )
 
 func TestClient(t *testing.T) {
-
+	// Start the plugin in stand-alone mode
 	cmd := exec.Command("../build/darwin/x86_64/snap-relay", "--stand-alone")
 	err := cmd.Start()
 	if err != nil {
+		if strings.Contains(err.Error(), "no such file or directory") {
+			log.Fatal(err, "\nHINT: Binary not found at specified location. Try running 'make' in the root directory then retry this test.\n")
+		}
 		log.Fatal(err)
 	}
+
 	defer cmd.Process.Kill()
 	time.Sleep(2 * time.Second)
 
-	// fmt.Printf("****pid: %v\n", cmd.Process.Pid)
-	// fmt.Printf("****status: %v\n", cmd.ProcessState)
-	// fmt.Printf("****stderr: %v\n", cmd.Stderr)
-	// fmt.Printf("****stdOut: %v\n", cmd.Stdout)
-
 	resp, err := http.Get("http://localhost:8182")
-	//	So(err, ShouldBeNil)
-	//	So(resp, ShouldNotBeNil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	if resp == nil {
-		log.Fatal("resp should equal nil, actually equals ", resp)
+		log.Fatal("response from http.Get should not equal nil.")
 	}
+
+	// Unmarshal preamble to get ListenAddress
 	preamble := make(map[string]string)
 	body, err := ioutil.ReadAll(resp.Body)
-	//So(err, ShouldBeNil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	json.Unmarshal(body, &preamble)
 
+	// Create client
 	c, err := client.NewStreamCollectorGrpcClient(
 		preamble["ListenAddress"],
 		5*time.Second,
@@ -77,51 +77,40 @@ func TestClient(t *testing.T) {
 	}
 
 	Convey("Test StreamMetrics", t, func() {
-		requested_metrics := []core.Metric{
+		// Start streaming the requested metrics
+		requestedMetrics := []core.Metric{
 			plugin.MetricType{
 				Namespace_: core.NewNamespace("relay", "collectd"),
 			},
 		}
-		metricsChan, errChan, err := c.StreamMetrics("test-taskID", requested_metrics)
+		metricsChan, errChan, err := c.StreamMetrics("test-taskID", requestedMetrics)
 		So(err, ShouldBeNil)
 		So(metricsChan, ShouldNotBeNil)
 		So(errChan, ShouldNotBeNil)
 
+		// Open default port and send data
 		go func() {
 			// 6123 is default port for graphite tcp
 			conn, err := net.Dial("tcp", "localhost:6123")
-
 			if err != nil {
 				panic(err)
 			}
 			defer conn.Close()
 			time.Sleep(2 * time.Second)
-
-			//var timer int64 = 10
-			//t := time.Duration(timer)
-			//for now := time.Now(); time.Since(now) < t; {
-			conn.Write([]byte("THIS IS A MESSAGE"))
-			fmt.Println("Sent message: THIS IS A MESSAGE")
-			//}
+			conn.Write([]byte("test.first 13 1502916834\n"))
 		}()
 
+		// Listen for sent metric. Exit if metric not received in 10s
 		t := time.NewTimer(time.Second * 10).C
-		//for {
-		fmt.Println("in select statement... ")
 		select {
 		case <-t:
-			fmt.Printf("In timer case.... \n")
+			fmt.Printf("Metric not received in 10 seconds, exiting. \n")
+			So(true, ShouldBeFalse)
 			break
 		case receivedFromMetricsChan := <-metricsChan:
-			fmt.Printf("In metricsChan case.... received: %v\n", receivedFromMetricsChan)
-			So(receivedFromMetricsChan, ShouldContain, "THIS IS A MESSAGE")
+			So(len(receivedFromMetricsChan), ShouldEqual, 1)
 			break
 		}
-		fmt.Println("after select statement... ")
-
-		//}
-
-		time.Sleep(2 * time.Second)
 
 	})
 
@@ -131,7 +120,6 @@ func TestClient(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(mt), ShouldEqual, 2)
 		})
-
 	})
 
 	Convey("Test GetConfigPolicy", t, func() {
@@ -139,7 +127,6 @@ func TestClient(t *testing.T) {
 		Convey("No error returned", func() {
 			So(err, ShouldBeNil)
 		})
-
 	})
 
 }
