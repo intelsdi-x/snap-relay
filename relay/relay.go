@@ -22,6 +22,8 @@ import (
 	"context"
 	"strings"
 
+	"google.golang.org/grpc/metadata"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 	"github.com/intelsdi-x/snap-relay/graphite"
@@ -68,6 +70,20 @@ func New(opts ...relayOption) plugin.StreamCollector {
 
 func (r *relay) StreamMetrics(ctx context.Context, metrics_in chan []plugin.Metric, metrics_out chan []plugin.Metric, err chan string) error {
 	log.SetLevel(log.Level(plugin.LogLevel))
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		log.Debug("No metadata")
+	}
+	taskID := "not-set"
+	if tempVal, ok := md["task-id"]; ok {
+		if len(tempVal) == 1 {
+			taskID = tempVal[0]
+		} else {
+			log.Debug("Skipping assignment of metadata")
+		}
+	}
+
 	graphiteDispatchStarted := false
 	statsdDispatchStarted := false
 	for metrics := range metrics_in {
@@ -75,12 +91,14 @@ func (r *relay) StreamMetrics(ctx context.Context, metrics_in chan []plugin.Metr
 		log.WithFields(
 			log.Fields{
 				"len(metrics)": len(metrics),
+				"task-id":      taskID,
 			},
 		).Debug("received metrics")
 		for idx, metric := range metrics {
 			log.WithFields(
 				log.Fields{
-					"metric": metric.Namespace.String(),
+					"metric":  metric.Namespace.String(),
+					"task-id": taskID,
 				},
 			).Debug("received metrics")
 

@@ -69,9 +69,8 @@ func main() {
 		},
 	}
 
-	// TODO: Need to find taskID
+	metricsOut, errOut, err := c.StreamMetrics("test-TaskID", requested_metrics)
 
-	metricsOut, errOut, err := c.StreamMetrics("test-taskID", requested_metrics)
 	if err != nil {
 		panic(err)
 	}
