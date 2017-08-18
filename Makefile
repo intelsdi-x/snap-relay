@@ -18,7 +18,7 @@
 
 default: 
 	$(MAKE) deps
-	$(MAKE) build
+	$(MAKE) all
 
 deps:
 	bash -c "./scripts/deps.sh"
@@ -37,5 +37,5 @@ test-all:
 	$(MAKE) test-small
 	$(MAKE) test-medium
 	$(MAKE) test-large
-build: 
+all: 
 	bash -c "./scripts/build.sh"
