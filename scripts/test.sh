@@ -80,6 +80,7 @@ elif [[ $TEST_TYPE == "small" ]]; then
     test_unit
   fi
 elif [[ $TEST_TYPE == "medium" ]]; then
+  bash -c "./scripts/build.sh" 
   if [[ -f "${__dir}/medium.sh" ]]; then
     . "${__dir}/medium.sh"
   else

@@ -1,3 +1,5 @@
+// +build medium
+
 /*
 http://www.apache.org/licenses/LICENSE-2.0.txt
 
@@ -113,20 +115,4 @@ func TestClient(t *testing.T) {
 		}
 
 	})
-
-	Convey("Test GetMetricTypes", t, func() {
-		Convey("Collect String", func() {
-			mt, err := c.GetMetricTypes(plugin.NewPluginConfigType())
-			So(err, ShouldBeNil)
-			So(len(mt), ShouldEqual, 2)
-		})
-	})
-
-	Convey("Test GetConfigPolicy", t, func() {
-		_, err := c.GetConfigPolicy()
-		Convey("No error returned", func() {
-			So(err, ShouldBeNil)
-		})
-	})
-
 }

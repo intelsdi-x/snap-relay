@@ -37,11 +37,5 @@ test-all:
 	$(MAKE) test-small
 	$(MAKE) test-medium
 	$(MAKE) test-large
-#test-all:
-	# $(MAKE) test
-
-		# todo: test.sh first run make (to get binary). Know location of this binary, 
-		# update location of binary in client_test.go ln 44 exec.Command(...)
-		# call $go test -run TestClient
 build: 
 	bash -c "./scripts/build.sh"
