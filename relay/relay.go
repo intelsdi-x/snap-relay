@@ -31,6 +31,7 @@ import (
 )
 
 const (
+	Vendor  = "intel"
 	Name    = "relay"
 	Version = 1
 )
@@ -160,7 +161,7 @@ func (r *relay) GetMetricTypes(cfg plugin.Config) ([]plugin.Metric, error) {
 	vals := []string{"collectd", "statsd"}
 	for _, val := range vals {
 		metric := plugin.Metric{
-			Namespace: plugin.NewNamespace(Name, val),
+			Namespace: plugin.NewNamespace(Vendor, Name, val),
 			Version:   Version,
 		}
 		mts = append(mts, metric)
@@ -173,11 +174,11 @@ func (r *relay) GetMetricTypes(cfg plugin.Config) ([]plugin.Metric, error) {
 func (r *relay) GetConfigPolicy() (plugin.ConfigPolicy, error) {
 	policy := plugin.NewConfigPolicy()
 
-	policy.AddNewStringRule([]string{"intel", "relay", "collectd"},
+	policy.AddNewStringRule([]string{Vendor, Name, "collectd"},
 		"collectdPort",
 		false)
 
-	policy.AddNewStringRule([]string{"intel", "relay", "statsd"},
+	policy.AddNewStringRule([]string{Vendor, Name, "statsd"},
 		"statsdPort",
 		false)
 
