@@ -39,46 +39,39 @@ import (
 )
 
 func TestClient(t *testing.T) {
-	// Start the plugin in stand-alone mode
-	cmd := exec.Command("../build/darwin/x86_64/snap-relay", "--stand-alone")
-	err := cmd.Start()
-	if err != nil {
-		if strings.Contains(err.Error(), "no such file or directory") {
-			log.Fatal(err, "\nHINT: Binary not found at specified location. Try running 'make' in the root directory then retry this test.\n")
-		}
-		log.Fatal(err)
-	}
-
-	defer cmd.Process.Kill()
-	time.Sleep(2 * time.Second)
-
-	resp, err := http.Get("http://localhost:8182")
-	if err != nil {
-		log.Fatal(err)
-	}
-	if resp == nil {
-		log.Fatal("response from http.Get should not equal nil.")
-	}
-
-	// Unmarshal preamble to get ListenAddress
-	preamble := make(map[string]string)
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	json.Unmarshal(body, &preamble)
-
-	// Create client
-	c, err := client.NewStreamCollectorGrpcClient(
-		preamble["ListenAddress"],
-		5*time.Second,
-		client.SecurityTLSOff(),
-	)
-	if err != nil {
-		panic(err)
-	}
 
 	Convey("Test StreamMetrics", t, func() {
+		// Start the plugin in stand-alone mode
+		cmd := exec.Command("../build/darwin/x86_64/snap-relay", "--stand-alone")
+		err := cmd.Start()
+		if err != nil {
+			if strings.Contains(err.Error(), "no such file or directory") {
+				log.Fatal(err, "\nHINT: Binary not found at specified location. Try running 'make' in the root directory then retry this test.\n")
+			}
+			log.Fatal(err)
+		}
+
+		defer cmd.Process.Kill()
+		time.Sleep(2 * time.Second)
+
+		resp, err := http.Get("http://localhost:8182")
+		So(err, ShouldBeNil)
+		So(resp, ShouldNotBeNil)
+
+		// Unmarshal preamble to get ListenAddress
+		preamble := make(map[string]string)
+		body, err := ioutil.ReadAll(resp.Body)
+		So(err, ShouldBeNil)
+		json.Unmarshal(body, &preamble)
+
+		// Create client
+		c, err := client.NewStreamCollectorGrpcClient(
+			preamble["ListenAddress"],
+			5*time.Second,
+			client.SecurityTLSOff(),
+		)
+		So(err, ShouldBeNil)
+
 		// Start streaming the requested metrics
 		requestedMetrics := []core.Metric{
 			plugin.MetricType{
