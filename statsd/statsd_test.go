@@ -25,6 +25,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -75,6 +76,9 @@ func TestStatsd(t *testing.T) {
 			So(len(statsd.metrics), ShouldEqual, 0)
 		})
 		Convey("sends valid UDP data", func() {
+			myCh := make(chan *plugin.Metric, 1000)
+			statsd.channelMgr.Add(myCh)
+
 			msgs := []string{
 				"foo.bar:7|c\n",
 				"foo.bar:8|g\n",
@@ -85,14 +89,15 @@ func TestStatsd(t *testing.T) {
 				So(err, ShouldBeNil)
 			}
 			time.Sleep(100 * time.Millisecond)
-			So(len(statsd.metrics), ShouldEqual, 3)
+			So(len(myCh), ShouldEqual, 3)
+
 			Convey("sends valid TCP data", func() {
 				for _, msg := range msgs {
 					_, err := tcpClient.Write([]byte(msg))
 					So(err, ShouldBeNil)
 				}
 				time.Sleep(100 * time.Millisecond)
-				So(len(statsd.metrics), ShouldEqual, 6)
+				So(len(myCh), ShouldEqual, 6)
 			})
 		})
 	})
