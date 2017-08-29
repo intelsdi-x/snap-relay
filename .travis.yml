@@ -60,6 +60,7 @@ deploy:
   api_key: $GITHUB_API_KEY
   file:
     - release/snap-relay_linux_x86_64
+    - release/snap-relay_darwin_x86_64
   skip_cleanup: true
   on:
     repo: intelsdi-x/snap-relay
