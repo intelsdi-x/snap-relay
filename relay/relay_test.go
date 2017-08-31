@@ -21,8 +21,11 @@ limitations under the License.
 package relay
 
 import (
+	"net"
 	"testing"
 
+	"github.com/intelsdi-x/snap-relay/graphite"
+	"github.com/intelsdi-x/snap-relay/statsd"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -42,6 +45,22 @@ func TestRelay(t *testing.T) {
 		Convey("No error returned", func() {
 			So(err, ShouldBeNil)
 		})
+	})
+
+	Convey("Test New", t, func() {
+		udpAddr, err := net.ResolveUDPAddr("udp", "localhost:0")
+		So(err, ShouldBeNil)
+		So(udpAddr, ShouldNotBeNil)
+		udpConn, err := net.ListenUDP("udp", udpAddr)
+		So(err, ShouldBeNil)
+		So(udpConn, ShouldNotBeNil)
+		//create graphite option for test
+		myGraphiteUDPOption := graphite.UDPConnectionOption(udpConn)
+		//create statsd option for test
+		myStatsdUDPOption := statsd.UDPConnectionOption(udpConn)
+
+		newRelayTCP := New(myGraphiteUDPOption, myStatsdUDPOption)
+		So(newRelayTCP, ShouldNotBeNil)
 	})
 
 	// Test for StreamMetrics can be found in client/client_test.go as a medium test

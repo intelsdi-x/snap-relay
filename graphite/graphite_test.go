@@ -19,6 +19,7 @@ limitations under the License.
 package graphite
 
 import (
+	"context"
 	"net"
 	"testing"
 
@@ -28,6 +29,21 @@ import (
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+type testContext struct{ context.Context }
+
+func (tc testContext) Deadline() (deadline time.Time, ok bool) {
+	return time.Now(), true
+}
+func (tc testContext) Done() <-chan struct{} {
+	return nil
+}
+func (tc testContext) Err() error {
+	return nil
+}
+func (tc testContext) Value(key interface{}) interface{} {
+	return nil
+}
 
 func TestGraphite(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
@@ -43,10 +59,23 @@ func TestGraphite(t *testing.T) {
 		So(tcpAddr, ShouldNotBeNil)
 		listen, err := net.ListenTCP("tcp", tcpAddr)
 		So(err, ShouldBeNil)
-		graphite := NewGraphite(UDPConnectionOption(udpConn), TCPListenerOption(listen))
+		myUDPOption := UDPConnectionOption(udpConn)
+		So(myUDPOption.Type(), ShouldEqual, "graphite")
+		port := 1234
+		graphite := NewGraphite(UDPListenPortOption(&port), myUDPOption, TCPListenPortOption(&port), TCPListenerOption(listen))
 		So(graphite, ShouldNotBeNil)
+
 		err = graphite.Start()
 		So(err, ShouldBeNil)
+		So(graphite.isStarted, ShouldBeTrue)
+		myOtherUDPOption := UDPConnectionOption(udpConn)(graphite)
+		So(myOtherUDPOption, ShouldEqual, UDPConnectionOption(nil))
+		myOtherTCPOption := TCPListenerOption(listen)(graphite)
+		So(myOtherTCPOption, ShouldEqual, TCPListenerOption(nil))
+		myOtherTCPPortOption := TCPListenPortOption(&port)(graphite)
+		So(myOtherTCPPortOption, ShouldEqual, TCPListenPortOption(nil))
+		myOtherUDPPortOption := UDPListenPortOption(&port)(graphite)
+		So(myOtherUDPPortOption, ShouldEqual, UDPListenPortOption(nil))
 		// create tcpClient
 		tcpAddr, err = net.ResolveTCPAddr("tcp", listen.Addr().String())
 		So(err, ShouldBeNil)
@@ -65,6 +94,7 @@ func TestGraphite(t *testing.T) {
 			}
 			time.Sleep(100 * time.Millisecond)
 			So(len(graphite.metrics), ShouldEqual, 0)
+			So(len(graphite.Metrics(testContext{})), ShouldEqual, 0)
 		})
 		Convey("receives invalid data over TCP", func() {
 			msgs := []string{"hello\n", "foo\n", "bar\n"}
@@ -74,6 +104,7 @@ func TestGraphite(t *testing.T) {
 			}
 			time.Sleep(100 * time.Millisecond)
 			So(len(graphite.metrics), ShouldEqual, 0)
+			So(len(graphite.Metrics(testContext{})), ShouldEqual, 0)
 		})
 		Convey("sends valid UDP data", func() {
 			// Add channel to ChannelMgr; this happens when stream is started
@@ -112,6 +143,15 @@ func TestGraphite(t *testing.T) {
 				})
 			})
 		})
+
+		graphite.stop()
+		time.Sleep(100 * time.Millisecond)
+		select {
+		case done := <-graphite.done:
+			So(done, ShouldNotBeNil)
+		case <-time.After(100 * time.Millisecond):
+			t.Fail()
+		}
 	})
 
 }
