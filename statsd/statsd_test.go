@@ -19,6 +19,7 @@ limitations under the License.
 package statsd
 
 import (
+	"context"
 	"net"
 	"testing"
 
@@ -28,6 +29,21 @@ import (
 	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+type testContext struct{ context.Context }
+
+func (tc testContext) Deadline() (deadline time.Time, ok bool) {
+	return time.Now(), true
+}
+func (tc testContext) Done() <-chan struct{} {
+	return nil
+}
+func (tc testContext) Err() error {
+	return nil
+}
+func (tc testContext) Value(key interface{}) interface{} {
+	return nil
+}
 
 func TestStatsd(t *testing.T) {
 	log.SetLevel(log.DebugLevel)
@@ -43,10 +59,24 @@ func TestStatsd(t *testing.T) {
 		So(tcpAddr, ShouldNotBeNil)
 		listen, err := net.ListenTCP("tcp", tcpAddr)
 		So(err, ShouldBeNil)
-		statsd := NewStatsd(UDPConnectionOption(udpConn), TCPListenerOption(listen))
+		udpOption := UDPConnectionOption(udpConn)
+		So(udpOption.Type(), ShouldEqual, "statsd")
+		port := 1234
+		statsd := NewStatsd(UDPListenPortOption(&port), udpOption, TCPListenPortOption(&port), TCPListenerOption(listen))
 		So(statsd, ShouldNotBeNil)
 		err = statsd.Start()
 		So(err, ShouldBeNil)
+		So(statsd.isStarted, ShouldBeTrue)
+
+		MyOtherUDPOption := UDPConnectionOption(udpConn)(statsd)
+		So(MyOtherUDPOption, ShouldEqual, UDPConnectionOption(nil))
+		myOtherTCPOption := TCPListenerOption(listen)(statsd)
+		So(myOtherTCPOption, ShouldEqual, TCPListenerOption(nil))
+		myOtherTCPPortOption := TCPListenPortOption(&port)(statsd)
+		So(myOtherTCPPortOption, ShouldEqual, TCPListenPortOption(nil))
+		MyOtherUDPPortOption := UDPListenPortOption(&port)(statsd)
+		So(MyOtherUDPPortOption, ShouldEqual, UDPListenPortOption(nil))
+
 		// create tcpClient
 		tcpAddr, err = net.ResolveTCPAddr("tcp", listen.Addr().String())
 		So(err, ShouldBeNil)
@@ -65,6 +95,7 @@ func TestStatsd(t *testing.T) {
 			}
 			time.Sleep(100 * time.Millisecond)
 			So(len(statsd.metrics), ShouldEqual, 0)
+			So(len(statsd.Metrics(testContext{})), ShouldEqual, 0)
 		})
 		Convey("receives invalid data over TCP", func() {
 			msgs := []string{"hello\n", "foo\n", "bar\n"}
@@ -74,6 +105,7 @@ func TestStatsd(t *testing.T) {
 			}
 			time.Sleep(100 * time.Millisecond)
 			So(len(statsd.metrics), ShouldEqual, 0)
+			So(len(statsd.Metrics(testContext{})), ShouldEqual, 0)
 		})
 		Convey("sends valid UDP data", func() {
 			myCh := make(chan *plugin.Metric, 1000)
@@ -100,6 +132,14 @@ func TestStatsd(t *testing.T) {
 				So(len(myCh), ShouldEqual, 6)
 			})
 		})
+		statsd.stop()
+		time.Sleep(100 * time.Millisecond)
+		select {
+		case done := <-statsd.done:
+			So(done, ShouldNotBeNil)
+		case <-time.After(100 * time.Millisecond):
+			t.Fail()
+		}
 	})
 
 }

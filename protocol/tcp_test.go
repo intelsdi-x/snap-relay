@@ -62,6 +62,7 @@ func TestTCPListen(t *testing.T) {
 				}
 			}
 			So(len(server.data), ShouldEqual, 0)
+			So(len(server.Data()), ShouldEqual, 0)
 
 			Convey("without newline", func() {
 				msgs := []string{"hello", "foo", "bar"}
@@ -78,11 +79,37 @@ func TestTCPListen(t *testing.T) {
 			})
 		})
 		server.Stop()
+		reachedDone := false
 		select {
 		case <-server.done:
 			time.Sleep(100 * time.Millisecond)
+			reachedDone = true
 		case <-time.After(100 * time.Millisecond):
 			t.Error("Timed out waiting for TCP server to stop")
 		}
+		So(reachedDone, ShouldBeTrue)
 	})
+
+	Convey("Setup failing TCP server", t, func(c C) {
+		//good ResolveTCPAddr
+		tcpAddr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+		So(err, ShouldBeNil)
+		So(tcpAddr, ShouldNotBeNil)
+
+		//bad server.Start
+		BadConn, err := net.ListenTCP("tcppct", tcpAddr)
+		So(err, ShouldNotBeNil)
+
+		//start server with badConn
+		listenPort := 5
+		server := NewTCPListener(TCPListenerOption(BadConn), TCPListenPortOption(&listenPort))
+		err = server.Start()
+		c.So(err, ShouldNotBeNil)
+
+		//start server with no conn
+		server = NewTCPListener()
+		err = server.Start()
+		c.So(err, ShouldBeNil)
+	})
+
 }

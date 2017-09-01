@@ -54,6 +54,7 @@ func TestUDPListen(t *testing.T) {
 				}
 			}
 			So(len(server.data), ShouldEqual, 0)
+			So(len(server.Data()), ShouldEqual, 0)
 
 			Convey("without newline", func() {
 				msgs := []string{"hello", "foo", "bar"}
@@ -76,6 +77,28 @@ func TestUDPListen(t *testing.T) {
 		case <-time.After(100 * time.Millisecond):
 			t.Error("Timed out waiting for UDP server to stop")
 		}
+	})
+
+	Convey("Setup failing UDP server", t, func(c C) {
+		//good ResolveUDPAddr
+		udpAddr, err := net.ResolveUDPAddr("udp", "localhost:0")
+		So(err, ShouldBeNil)
+		So(udpAddr, ShouldNotBeNil)
+
+		//bad server.Start
+		BadConn, err := net.ListenUDP("udppdu", udpAddr)
+		So(err, ShouldNotBeNil)
+
+		//start server with badConn
+		listenPort := 5
+		server := NewUDPListener(UDPConnectionOption(BadConn), UDPListenPortOption(&listenPort))
+		err = server.Start()
+		c.So(err, ShouldNotBeNil)
+
+		//start server with no conn
+		server = NewUDPListener()
+		err = server.Start()
+		c.So(err, ShouldBeNil)
 	})
 
 }
