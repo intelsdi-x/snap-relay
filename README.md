@@ -126,7 +126,7 @@ Create a task:
 $ snaptel task create -t /examples/tasks/collectd.yml
 ```
 
-Send data (do this a few times):
+Stream data from Graphite. The default port is `6124`. Do this a few times:
 ```
 $ echo "test.first 13 `date +%s`"|nc -u -c localhost 6124
 ```
