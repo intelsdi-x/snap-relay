@@ -1,3 +1,12 @@
+DISCONTINUATION OF PROJECT. 
+
+This project will no longer be maintained by Intel.
+
+This project has been identified as having known security escapes.
+
+Intel has ceased development and contributions including, but not limited to, maintenance, bug fixes, new releases, or updates, to this project.  
+
+Intel no longer accepts patches to this project.
 # snap streaming collector plugin - relay
 
 Snap-relay is a streaming Snap plugin that starts listeners for collecting metrics from statsd and/or collectd. Received metrics are dispatched to the Snap framework with the namespaces `/intel/relay/statsd` and `/intel/relay/collectd` respectively.
